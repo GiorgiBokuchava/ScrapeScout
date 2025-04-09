@@ -1,0 +1,141 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <!-- Required meta tags -->
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <!-- Apply saved theme before rendering -->
+    <script>
+        (function () {
+            const savedTheme = localStorage.getItem("theme");
+            const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+            const isDarkTheme = savedTheme === "dark" || (!savedTheme && prefersDark);
+
+            // Apply the theme to the document
+            document.documentElement.setAttribute("data-theme", isDarkTheme ? "dark" : "light");
+        })();
+    </script>
+
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://site-assets.fontawesome.com/releases/v6.7.2/css/all.css">
+    <link rel="stylesheet" href="https://site-assets.fontawesome.com/releases/v6.7.2/css/sharp-duotone-thin.css">
+    <link rel="stylesheet" href="https://site-assets.fontawesome.com/releases/v6.7.2/css/sharp-duotone-solid.css">
+    <link rel="stylesheet" href="https://site-assets.fontawesome.com/releases/v6.7.2/css/sharp-duotone-regular.css">
+    <link rel="stylesheet" href="https://site-assets.fontawesome.com/releases/v6.7.2/css/sharp-duotone-light.css">
+    <link rel="stylesheet" href="https://site-assets.fontawesome.com/releases/v6.7.2/css/sharp-thin.css">
+    <link rel="stylesheet" href="https://site-assets.fontawesome.com/releases/v6.7.2/css/sharp-solid.css">
+    <link rel="stylesheet" href="https://site-assets.fontawesome.com/releases/v6.7.2/css/sharp-regular.css">
+    <link rel="stylesheet" href="https://site-assets.fontawesome.com/releases/v6.7.2/css/sharp-light.css">
+    <link rel="stylesheet" href="https://site-assets.fontawesome.com/releases/v6.7.2/css/duotone-thin.css">
+    <link rel="stylesheet" href="https://site-assets.fontawesome.com/releases/v6.7.2/css/duotone-regular.css">
+    <link rel="stylesheet" href="https://site-assets.fontawesome.com/releases/v6.7.2/css/duotone-light.css">
+
+
+    <!-- Link to CSS -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+
+    <title>
+        {% block title %}{% endblock %}
+    </title>
+</head>
+
+<body>
+    <div class="nav-container">
+        <nav class="navbar">
+            <!-- Left side of navbar -->
+            <div class="nav-left">
+
+                <svg width="45" xmlns="http://www.w3.org/2000/svg" viewBox="188.67 189.01 632.08 726.54">
+                    <title>scrape scout logo</title>
+                    <g id="Layer_1" data-name="Layer 1">
+                        <g id="_400_Global_globe_world" data-name="400, Global, globe, world">
+                            <path
+                                d="M811.3288,499.9875c0-205.71077-195.74717-353.90523-393.72335-299.71707C289.31415,235.66458,188.6712,353.999,188.6712,499.9875c0,174.745,144.885,317.413,322.946,310.7765C679.72679,804.12746,811.3288,666.988,811.3288,499.9875Zm-593.89452,14.381H340.18721c1.1145,42.0252,5.5385,81.83675,14.38648,119.44344-30.96893,6.63654-59.72117,16.58806-88.48425,27.64859C238.44085,618.32741,219.64025,568.55666,217.43428,514.36849ZM267.193,339.62239c27.65955,11.06053,57.5152,19.90962,88.48425,27.64859a512.1751,512.1751,0,0,0-14.37551,119.44344H217.43428C219.64025,432.52626,238.44085,381.64759,267.193,339.62239Zm516.48725,147.092H660.92741c-1.11462-42.0252-5.53862-81.83675-14.3877-119.44344,30.97015-6.63544,59.72227-16.58806,88.48426-27.64859C762.67365,381.64759,781.47316,432.52626,783.68022,486.71442ZM733.91056,660.35151c-27.64858-11.06054-57.50423-19.903-88.47328-27.64859a512.17523,512.17523,0,0,0,14.37551-119.44344h122.7639C781.47316,568.55666,762.67365,618.32741,733.91056,660.35151Zm-218.97177-145.983H633.26773c-1.10353,39.81265-5.52752,78.52178-14.37661,113.91043a545.90136,545.90136,0,0,0-105.06683-9.95151V514.36849Zm0-27.65407V383.86452a824.33214,824.33214,0,0,0,105.06683-9.957c8.848,35.39414,13.26211,74.10326,14.37564,113.91591l-119.44247-1.109Zm0-131.6075V217.96751c28.75212,6.63653,55.29718,33.18159,77.41837,77.41824a334.05635,334.05635,0,0,1,19.90291,49.76965A484.427,484.427,0,0,1,514.93879,355.10692Zm-27.64858,0a708.34683,708.34683,0,0,1-97.33335-9.95152,333.00739,333.00739,0,0,1,19.914-49.76965c22.12106-44.23665,48.65625-70.78171,77.41934-77.41824Zm0,27.64968V485.61089H367.84677c1.10353-39.81265,5.52752-78.52177,14.37551-113.91482C416.50192,378.33151,450.79253,382.7566,487.29021,382.7566Zm0,131.61189v102.8499a824.17234,824.17234,0,0,0-105.06793,9.957c-8.848-35.39414-13.272-74.10326-14.37551-113.91591H487.29021Zm0,130.504V782.01188c-28.76309-6.64093-55.29828-33.1816-77.41934-77.41824a333.008,333.008,0,0,1-19.914-49.76966A689.63454,689.63454,0,0,1,487.29021,644.87246Zm27.64858,0a706.81018,706.81018,0,0,1,97.32128,9.95152,334.05691,334.05691,0,0,1-19.90291,49.76966c-22.12119,44.23664-48.66625,70.77731-77.41837,77.41824ZM638.80622,659.248c26.54506,5.52752,53.07915,14.3766,77.41837,23.22459-35.39427,42.0252-82.95686,72.99425-137.14051,89.58231C607.83607,742.19374,626.6368,699.06063,638.80622,659.248Zm0-318.51657c-12.16942-39.81814-30.97015-81.84224-59.72214-112.81239,54.18365,15.48453,101.74624,47.55821,137.14051,89.58779A792.87514,792.87514,0,0,1,638.80622,340.73141ZM422.02945,227.919c-28.75212,29.86114-47.55163,72.99425-59.72117,112.81239-26.54506-5.533-53.08025-14.381-77.41824-23.2246C320.28418,275.47723,367.84677,243.40355,422.02945,227.919ZM362.30828,659.248c12.16954,39.81265,30.969,81.84333,59.72117,112.8069C367.84677,756.57035,320.28418,724.49777,284.89,682.47257A791.55836,791.55836,0,0,1,362.30828,659.248Z"
+                                style="fill:#010101" />
+                        </g>
+                    </g>
+                    <g id="Layer_2" data-name="Layer 2">
+                        <path
+                            d="M667.37064,384.796a8.76641,8.76641,0,0,0-11.63489-4.29129L464.61414,468.632a8.76647,8.76647,0,0,0-4.29126,11.63492c30.46255,66.0647,72.58517,117.77582,72.58523,117.77588,41.9632,42.58228,76.27356,75.88684,100.07843,98.63806q40.683,93.953,81.36609,187.906c10.1239,21.95563,39.78931,29.9361,66.14038,17.78546s39.54432-39.89349,29.258-62.17932L714.80973,654.98482C723.18711,555.93721,708.95566,474.98152,667.37064,384.796Z"
+                            style="fill:#010101;stroke:#fff;stroke-miterlimit:10;stroke-width:15px" />
+                        <path
+                            d="M766.11111,840.51062h0a13.33324,13.33324,0,1,0,13.05183,9.95871A13.27324,13.27324,0,0,0,766.1111,840.51062Z"
+                            style="fill:#fff" />
+                        <line x1="639.04256" y1="693.68086" x2="720.86575" y2="651.98481"
+                            style="fill:none;stroke:#fff;stroke-miterlimit:10;stroke-width:12px" />
+                    </g>
+                </svg>
+
+                <div class="navbar-collapse">
+                    <ul class="navbar-nav">
+                        <li class="nav-item">
+                            <a class="nav-link" href="{{ url_for('home_page') }}">Home</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="#">Scrape</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="#">About</a>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- Right side of navbar -->
+            <div class="nav-right">
+                <div class="theme-toggle">
+                    <input type="checkbox" id="dark-mode-toggle" />
+                    <label for="dark-mode-toggle" class="theme-toggle-container">
+                        <i class="fa fa-solid fa-sun"></i>
+                        <i class="fa fa-duotone fa-moon fa-rotate-by" style="--fa-rotate-angle: -20deg"></i>
+                    </label>
+                </div>
+
+                {% if current_user.is_authenticated %}
+                <button class="button" type="button" id="profile-btn" data-bs-toggle="dropdown" aria-haspopup="true"
+                    aria-expanded="false">
+                    <svg width="40" height="40" class="profile-picture"
+                        style="border-radius: 50px; background-color: white;"
+                        data-jdenticon-value="{{ current_user.username }}"
+                        title="Profile picture for {{ current_user.username }}">
+                    </svg>
+                </button>
+                <ul class="dropdown-menu">
+                    <li class="dropdown-item">{{ current_user.username }}</li>
+                    <li><a class="dropdown-item" href="#">Profile</a></li>
+                    <li><a class="dropdown-item" href="#">Settings</a></li>
+                    <li>
+                        <hr class="dropdown-divider">
+                    </li>
+                    <li><a class="dropdown-item text-danger" href="{{ url_for('logout') }}">Logout</a></li>
+                </ul>
+                {% else %}
+                <ul class="navbar-nav">
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('login') }}">Login</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('register') }}">Sign Up</a>
+                    </li>
+                </ul>
+                {% endif %}
+
+            </div>
+        </nav>
+    </div>
+
+    <!-- Main content block -->
+    <main>
+        {% block content %}{% endblock %}
+    </main>
+
+    <!-- Generates profile picture based on username -->
+    <script src="https://cdn.jsdelivr.net/npm/jdenticon@3.2.0"></script>
+
+    <!-- Link to script.js -->
+    <script src="{{ url_for('static', filename='script.js') }}"></script>
+</body>
+
+</html>
