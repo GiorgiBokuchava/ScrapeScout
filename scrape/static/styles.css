@@ -408,7 +408,9 @@ input:-webkit-autofill:active {
     color: var(--color-error) !important;
 }
 
-/* qwydewjidk */
+.show {
+    display: flex;
+}
 
 /* Responsive design for smaller screens */
 @media (max-width: 768px) {

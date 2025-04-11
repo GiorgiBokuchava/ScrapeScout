@@ -14,8 +14,7 @@ class RegisterForm(FlaskForm):
         email_address = User.query.filter_by(email_address=email_to_check.data).first()
         if email_address:
             raise ValidationError(
-                f"This email address is already registered. Please try a different one, or "
-                f"<a href='/login'>log in</a>."
+                f"This email address is already registered. Please try a different one."
             )
 
     username = StringField(

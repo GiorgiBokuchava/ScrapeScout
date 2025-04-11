@@ -9,18 +9,18 @@ document.addEventListener("DOMContentLoaded", () => {
     // Set the toggle switch state
     if (toggle) {
         toggle.checked = isDarkTheme;
-    }
 
-    // Toggle theme on checkbox change
-    toggle.addEventListener("change", () => {
-        if (toggle.checked) {
-            document.documentElement.setAttribute("data-theme", "dark");
-            localStorage.setItem("theme", "dark");
-        } else {
-            document.documentElement.setAttribute("data-theme", "light");
-            localStorage.setItem("theme", "light");
-        }
-    });
+        // Toggle theme on checkbox change
+        toggle.addEventListener("change", () => {
+            if (toggle.checked) {
+                document.documentElement.setAttribute("data-theme", "dark");
+                localStorage.setItem("theme", "dark");
+            } else {
+                document.documentElement.setAttribute("data-theme", "light");
+                localStorage.setItem("theme", "light");
+            }
+        });
+    }
 
     // Circle animation
     if (circle && field_submit) {
@@ -35,25 +35,27 @@ document.addEventListener("DOMContentLoaded", () => {
     const dropdownBtn = document.getElementById('profile-btn');
     const dropdownMenu = document.getElementById('dropdown-menu');
 
-    // Toggle dropdown menu on button click
-    dropdownBtn.addEventListener('click', (event) => {
-        event.stopPropagation(); // Prevent the click from bubbling up to the document
-        dropdownMenu.classList.toggle('show');
-    });
+    if (dropdownBtn && dropdownMenu) {
+        // Toggle dropdown menu on button click
+        dropdownBtn.addEventListener('click', (event) => {
+            event.stopPropagation(); // Prevent the click from bubbling up to the document
+            dropdownMenu.classList.toggle('show');
+        });
 
-    // Close the dropdown if clicked outside
-    document.addEventListener('click', (event) => {
-        // Check if the click target is not inside the dropdown menu or button
-        if (!dropdownMenu.contains(event.target) && !dropdownBtn.contains(event.target)) {
-            dropdownMenu.classList.remove('show');
-        }
-    });
+        // Close the dropdown if clicked outside
+        document.addEventListener('click', (event) => {
+            // Check if the click target is not inside the dropdown menu or button
+            if (!dropdownMenu.contains(event.target) && !dropdownBtn.contains(event.target)) {
+                dropdownMenu.classList.remove('show');
+            }
+        });
 
-    // Optional: Close the dropdown when pressing the Escape key
-    document.addEventListener('keydown', (event) => {
-        if (event.key === "Escape") {
-            dropdownMenu.classList.remove('show');
-        }
-    });
+        // Optional: Close the dropdown when pressing the Escape key
+        document.addEventListener('keydown', (event) => {
+            if (event.key === "Escape") {
+                dropdownMenu.classList.remove('show');
+            }
+        });
+    }
 });
 
