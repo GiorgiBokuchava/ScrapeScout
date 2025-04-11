@@ -8,13 +8,14 @@
     --color-secondary: #F5A623;
     --color-background: #FFFFFF;
     --color-surface: #e8efff;
+    --color-surface-border: #B6BDC6;
     --color-text-primary: #212121;
+    --color-text-primary-inverted: #FFFFFF;
     --color-text-secondary: #757575;
-    --color-error: #D32F2F;
+    --color-error: #ff1f1f;
     --color-nav: #e8efff;
     --color-logo-globe: black;
     --color-box-shadow: #00000067;
-
 }
 
 [data-theme="dark"] {
@@ -23,10 +24,13 @@
     --color-primary-light: #235bdd;
     --color-secondary: #F5A623;
     --color-background: #080819;
-    --color-surface: #1E1E1E;
+    /* --color-surface: #1E1E1E; */
+    --color-surface: #14191f;
+    --color-surface-border: #3b4149;
     --color-text-primary: #FFFFFF;
+    --color-text-primary-inverted: #212121;
     --color-text-secondary: #B0B0B0;
-    --color-error: #FF5252;
+    --color-error: #ff5959;
     --color-nav: #0b1425;
     --color-logo-globe: white;
     --color-box-shadow: #000000;
@@ -201,9 +205,10 @@ body {
     align-items: center;
     justify-content: center;
     padding: 2rem;
-    margin: 4rem auto 0 auto;
+    margin: 2rem auto 0 auto;
     max-width: 400px;
     background-color: var(--color-surface);
+    border: 1px solid var(--color-surface-border);
     border-radius: 1rem;
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
     transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
@@ -245,16 +250,6 @@ body {
     font-size: 1rem;
     outline: 0px solid var(--color-primary);
     /* transition: background-color 5000s ease-in-out 0s; */
-}
-
-input:-webkit-autofill,
-input:-webkit-autofill:hover,
-input:-webkit-autofill:focus,
-input:-webkit-autofill:active {
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: #ffffff;
-    transition: background-color 5000s ease-in-out 0s;
-    box-shadow: inset 0 0 20px 20px #23232329;
 }
 
 .form-control:focus {
@@ -309,6 +304,111 @@ input:-webkit-autofill:active {
 .field-submit:hover .button-circle {
     transform: scale(25);
 }
+
+/* Fix chrome field issue */
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus,
+input:-webkit-autofill:active {
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: var(--color-text-primary);
+    transition: background-color 5000s ease-in-out 0s;
+    box-shadow: inset 0 0 20px 20px var(--color-surface) !important;
+}
+
+.redirect {
+    position: relative;
+    text-decoration: none;
+    font-weight: bold;
+    color: var(--color-text-primary);
+}
+
+/* .redirect:hover {
+    text-decoration: underline;
+} */
+
+.redirect::after {
+    content: "";
+    position: absolute;
+    width: 0;
+    height: 1.5px;
+    background-color: var(--color-text-primary);
+    left: 0;
+    bottom: 1px;
+    transition: 150ms;
+}
+
+.redirect:hover::after {
+    width: 100%;
+    left: 0;
+}
+
+.dropdown {
+    position: relative;
+    display: inline-block;
+}
+
+.dropdown-button {
+    background-color: transparent;
+    padding: 0;
+    margin: 0;
+    border: none;
+    cursor: pointer;
+    transition: scale 0.1s ease-in-out;
+}
+
+.dropdown-button:hover {
+    scale: 1.02;
+}
+
+.profile-picture {
+    margin: 0;
+}
+
+.dropdown-menu {
+    display: none;
+    position: absolute;
+    right: 0;
+    min-width: 150px;
+    flex-direction: column;
+    align-items: flex-start;
+    background-color: var(--color-surface);
+    border: 1px solid var(--color-surface-border);
+    border-radius: 4px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    color: var(--color-text-primary);
+    transition: opacity 0.2s ease-in-out;
+}
+
+.dropdown-menu .dropdown-item {
+    display: flex;
+    justify-content: flex-start;
+    padding: 10px 0px;
+    cursor: pointer;
+    text-align: left;
+}
+
+.dropdown-menu.visible {
+    display: flex;
+}
+
+.dropdown-username {
+    cursor: auto !important;
+}
+
+.dropdown-divider {
+    width: 95%;
+    margin: 5px auto;
+    padding: 0;
+    height: 1px;
+    background-color: var(--color-surface-border);
+}
+
+.text-danger {
+    color: var(--color-error) !important;
+}
+
+/* qwydewjidk */
 
 /* Responsive design for smaller screens */
 @media (max-width: 768px) {
