@@ -22,6 +22,7 @@ def register():
         )
         db.session.add(user_to_create)
         db.session.commit()
+        login_user(user_to_create)
         flash("Account created successfully!", "success")
         return redirect(url_for("home_page"))
 

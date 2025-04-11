@@ -63,5 +63,7 @@
         {{ form.submit(class="submit-button register-button button") }}
         <span class="button-circle"></span>
     </div>
+    <span> Already have an account? <a href="{{ url_for('login') }}" class="redirect">Log In</a>
+    </span>
 </form>
 {% endblock %}
