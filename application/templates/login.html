@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 
 {% block title %}
-Login
+Login | ScrapeScout
 {% endblock %}
 
 {% block content %}
@@ -35,8 +35,10 @@ Login
         </ul>
         {% endif %}
     </div>
-
-    <br>
+    <div class="field-remember">
+        {{ form.remember(class="form-check-input") }}
+        {{ form.remember.label(class="field-label") }}
+    </div>
 
     <div class="field-submit">
         {{ form.submit(class="submit-button login-button button") }}

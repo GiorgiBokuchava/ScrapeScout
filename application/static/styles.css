@@ -226,7 +226,7 @@ body {
 /* Form fields container */
 .form>div {
     width: 100%;
-    margin-bottom: 1rem;
+    margin-bottom: 2rem;
 }
 
 /* Field label styling */
@@ -255,6 +255,26 @@ body {
 .form-control:focus {
     outline: 2px solid var(--color-primary);
     border-color: var(--color-primary);
+}
+
+.field-remember {
+    display: flex;
+    /* padding-top: 0.5rem; */
+    margin: 0;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.field-remember * {
+    margin: 0;
+    padding: 0;
+}
+
+.form-check-input {
+    margin-right: 0.5rem;
+    width: 15px;
+    height: 15px;
+    cursor: pointer;
 }
 
 .field-submit {

@@ -1,4 +1,4 @@
-from scrape import db, bcrypt, login_manager
+from application import db, bcrypt, login_manager
 from flask_login import UserMixin
 
 
@@ -31,8 +31,8 @@ class User(db.Model, UserMixin):
 class Job(db.Model):
     id = db.Column(db.Integer, primary_key=True, unique=True, nullable=False)
     title = db.Column(db.String(100), nullable=False)
-    company = db.Column(db.String(100), nullable=False)
     location = db.Column(db.String(100), nullable=False)
+    company = db.Column(db.String(100), nullable=False)
     description = db.Column(db.Text, nullable=False)
     url = db.Column(db.String(200), nullable=False)
     date_posted = db.Column(db.DateTime, nullable=False)

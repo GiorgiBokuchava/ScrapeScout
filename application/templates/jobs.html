@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+
+{% block title %}
+Jobs | ScrapeScout
+{% endblock %}
+
+{% block content %}
+<div class="jobs-container">
+    <div class="job-filters">
+        <form method="POST">
+            {{ form.hidden_tag() }}
+            <div class="job-filters-group">
+                <div class="location_filter">
+                    <label for="location">{{ form.locations.label }}</label>
+                    {{ form.locations() }}
+                </div>
+
+                <div class="category_filter">
+                    <label for="category">{{ form.categories.label }}</label>
+                    {{ form.categories() }}
+                </div>
+
+                <div class="keyword_filter">
+                    <label for="keyword">{{ form.keyword.label }}</label>
+                    {{ form.keyword() }}
+                </div>
+                <button type="submit">Search</button>
+            </div>
+        </form>
+    </div>
+    <div class="job-listing">
+        {% if jobs %}
+        <h2>Showing up to 10 Jobs:</h2>
+        <ul>
+            {% for job in jobs %}
+            <li>
+                <h3>{{ job.title }}</h3>
+                <p>Company: {{ job.company_name }}</p>
+                <p>Posted: {{ job.posted_time }}</p>
+                <p>Email: {{ job.email }}</p>
+                <p>Description: {{ job.description[:100] }}...</p> <!-- partial preview -->
+                <a href="{{ job.job_URL }}">View Listing</a>
+            </li>
+            {% endfor %}
+        </ul>
+        {% else %}
+        <p>No jobs found. Try adjusting your search.</p>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

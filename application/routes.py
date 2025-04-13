@@ -1,8 +1,9 @@
-from scrape import app, db
+from application import app, db
 from flask import render_template, request, redirect, url_for, flash
-from scrape.forms import RegisterForm, LoginForm
-from scrape.models import User, Job
+from application.forms import RegisterForm, LoginForm, JobSearchForm
+from application.models import User, Job
 from flask_login import login_user, logout_user
+from application.scrape import get_jobs
 
 
 @app.route("/")
@@ -39,7 +40,7 @@ def login():
     if form.validate_on_submit():
         attempted_user = User.query.filter_by(username=form.username.data).first()
         if attempted_user and attempted_user.check_password(form.password.data):
-            login_user(attempted_user)
+            login_user(attempted_user, remember=form.remember.data)
             flash("Login successful!", "success")
             return redirect(url_for("home_page"))
         else:
@@ -53,3 +54,25 @@ def logout():
     logout_user()
     flash("You have been logged out.", "success")
     return redirect(url_for("home_page"))
+
+
+@app.route("/jobs", methods=["GET", "POST"])
+def jobs():
+    form = JobSearchForm()
+    jobs = []
+
+    if request.method == "POST" and form.validate_on_submit():
+        job_location = form.locations.data
+        job_category = form.categories.data
+        job_keyword = form.keyword.data
+        # Here you would typically call your scraping function with the provided parameters
+        # For example:
+        # jobs = scrape_jobs(job_location, job_category, job_keyword)
+
+        jobs = get_jobs(
+            searched_location=job_location,
+            searched_category=job_category,
+            searched_keyword=job_keyword,
+        )
+
+    return render_template("jobs.html", form=form, jobs=jobs)

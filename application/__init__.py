@@ -11,4 +11,4 @@ db = SQLAlchemy(app)
 bcrypt = Bcrypt(app)
 login_manager = LoginManager(app)
 
-from scrape import routes
+from application import routes
