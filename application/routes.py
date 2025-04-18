@@ -1,5 +1,5 @@
 from application import app, db
-from flask import render_template, request, redirect, url_for, flash
+from flask import render_template, request, redirect, url_for, flash, jsonify
 from application.forms import RegisterForm, LoginForm, JobSearchForm
 from application.models import User, Job
 from flask_login import login_user, logout_user
@@ -59,9 +59,11 @@ def logout():
 @app.route("/jobs", methods=["GET", "POST"])
 def jobs():
     form = JobSearchForm()
-    jobs = []
 
-    if request.method == "POST" and form.validate_on_submit():
+    if request.method == "GET":
+        return render_template("jobs.html", form=form)
+
+    if form.validate_on_submit():
         job_location = form.locations.data
         job_category = form.categories.data
         job_keyword = form.keyword.data
@@ -69,10 +71,27 @@ def jobs():
         # For example:
         # jobs = scrape_jobs(job_location, job_category, job_keyword)
 
-        jobs = get_jobs(
+        jobs_list = get_jobs(
             searched_location=job_location,
             searched_category=job_category,
             searched_keyword=job_keyword,
         )
 
-    return render_template("jobs.html", form=form, jobs=jobs)
+        # Convert each Job object into a dictionary for JSON serialization
+        jobs_data = []
+        for job in jobs_list:
+            jobs_data.append(
+                {
+                    "title": job.title,
+                    "company": job.company_name,
+                    "url": job.job_URL,
+                    "posted_time": job.posted_time,
+                    "description": job.description,
+                }
+            )
+
+        return jsonify({"jobs": jobs_data})
+    else:
+        # You may include form error details for debugging
+        return jsonify({"jobs": [], "error": form.errors}), 400
+    # return render_template("jobs.html", form=form, jobs=jobs)

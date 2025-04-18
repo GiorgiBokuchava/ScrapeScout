@@ -6,65 +6,67 @@ Register | ScrapeScout
 
 {% block content %}
 <!-- <form class="form register-form" method="POST" autocomplete="off"> -->
-<form class="form register-form" method="POST">
-    {{ form.hidden_tag() }}
+<div class="form-container">
+    <form class="form register-form" method="POST">
+        {{ form.hidden_tag() }}
 
-    <h2 class="form-title">Register</h2>
+        <h2 class="form-title">Register</h2>
 
-    <div class="field-username">
-        {{ form.username.label(class="field-label") }}
-        {{ form.username(class="form-control", placeholder="Username") }}
-        {% if form.username.errors %}
-        <ul class="errors">
-            {% for error in form.username.errors %}
-            <li>{{ error }}</li>
-            {% endfor %}
-        </ul>
-        {% endif %}
-    </div>
+        <div class="field-username">
+            {{ form.username.label(class="field-label") }}
+            {{ form.username(class="form-control", placeholder="Username") }}
+            {% if form.username.errors %}
+            <ul class="errors">
+                {% for error in form.username.errors %}
+                <li>{{ error }}</li>
+                {% endfor %}
+            </ul>
+            {% endif %}
+        </div>
 
-    <div class="field-email-address">
-        {{ form.email_address.label(class="field-label") }}
-        {{ form.email_address(class="form-control", placeholder="Email Address") }}
-        {% if form.email_address.errors %}
-        <ul class="errors">
-            {% for error in form.email_address.errors %}
-            <li>{{ error }}</li>
-            {% endfor %}
-        </ul>
-        {% endif %}
-    </div>
+        <div class="field-email-address">
+            {{ form.email_address.label(class="field-label") }}
+            {{ form.email_address(class="form-control", placeholder="Email Address") }}
+            {% if form.email_address.errors %}
+            <ul class="errors">
+                {% for error in form.email_address.errors %}
+                <li>{{ error }}</li>
+                {% endfor %}
+            </ul>
+            {% endif %}
+        </div>
 
-    <div class="field-password-field1">
-        {{ form.password_field1.label(class="field-label") }}
-        {{ form.password_field1(class="form-control", placeholder="Password") }}
-        {% if form.password_field1.errors %}
-        <ul class="errors">
-            {% for error in form.password_field1.errors %}
-            <li>{{ error }}</li>
-            {% endfor %}
-        </ul>
-        {% endif %}
-    </div>
+        <div class="field-password-field1">
+            {{ form.password_field1.label(class="field-label") }}
+            {{ form.password_field1(class="form-control", placeholder="Password") }}
+            {% if form.password_field1.errors %}
+            <ul class="errors">
+                {% for error in form.password_field1.errors %}
+                <li>{{ error }}</li>
+                {% endfor %}
+            </ul>
+            {% endif %}
+        </div>
 
-    <div class="field-password-field2">
-        {{ form.password_field2.label(class="field-label") }}
-        {{ form.password_field2(class="form-control", placeholder="Confirm Password") }}
-        {% if form.password_field2.errors %}
-        <ul class="errors">
-            {% for error in form.password_field2.errors %}
-            <li>{{ error }}</li>
-            {% endfor %}
-        </ul>
-        {% endif %}
-    </div>
+        <div class="field-password-field2">
+            {{ form.password_field2.label(class="field-label") }}
+            {{ form.password_field2(class="form-control", placeholder="Confirm Password") }}
+            {% if form.password_field2.errors %}
+            <ul class="errors">
+                {% for error in form.password_field2.errors %}
+                <li>{{ error }}</li>
+                {% endfor %}
+            </ul>
+            {% endif %}
+        </div>
 
-    <div class="field-submit">
-        {{ form.submit(class="submit-button register-button button") }}
-        <span class="button-circle"></span>
-    </div>
+        <div class="field-submit">
+            {{ form.submit(class="submit-button register-button button") }}
+            <span class="button-circle"></span>
+        </div>
 
-    <span> Already have an account? <a href="{{ url_for('login') }}" class="redirect">Log In</a>
-    </span>
-</form>
+        <span> Already have an account? <a href="{{ url_for('login') }}" class="redirect">Log In</a>
+        </span>
+    </form>
+</div>
 {% endblock %}

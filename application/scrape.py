@@ -9,10 +9,12 @@ def get_jobs(searched_location, searched_category, searched_keyword):
     # Combine the results from different sites
     all_jobs_list = []
     for job in jobs_ge_list:
-        if (
-            job.title not in all_jobs_list.title
-            and job.company_name not in all_jobs_list.company_name
+        if not any(
+            existing_job.title == job.title
+            and existing_job.company_name == job.company_name
+            for existing_job in all_jobs_list
         ):
             all_jobs_list.append(job)
 
     # repeat for other sites
+    return all_jobs_list

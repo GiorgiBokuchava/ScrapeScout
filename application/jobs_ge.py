@@ -112,14 +112,15 @@ def scrape_jobs_ge(chosen_job_location, chosen_job_category, chosen_job_keyword)
     ###############################
     # Scrape the website
 
-    ######## TO RUN LOCALLY
-    # # Load the saved local HTML file
-    # with open("main_page.html", "r", encoding="utf-8") as file:
-    #     html_content = file.read()
-    # soup = BeautifulSoup(html_content, "html.parser")
+    ####### TO RUN LOCALLY
+    # Load the saved local HTML file
+    with open("application/temps/main_page.html", "r", encoding="utf-8") as file:
+        html_content = file.read()
+    soup = BeautifulSoup(html_content, "html.parser")
 
-    page_to_scrape = requests.get(page_URL)
-    soup = BeautifulSoup(page_to_scrape.text, "html.parser")
+    ####### TO RUN ON SERVER
+    # page_to_scrape = requests.get(page_URL)
+    # soup = BeautifulSoup(page_to_scrape.text, "html.parser")
 
     titles = soup.find_all("a", attrs={"class": "vip"})
     print(titles)
