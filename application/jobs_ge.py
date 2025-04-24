@@ -2,8 +2,9 @@ from bs4 import BeautifulSoup
 import requests
 import re
 from application.Job import Job
-
-# from application import search_options
+from selenium import webdriver
+from selenium.webdriver.chrome.options import Options
+import time
 
 job_locations = {
     "": "Any",
@@ -73,7 +74,29 @@ def extractEmail(description):
     return email if email else "N/A"
 
 
-count = 0
+# Get html content of the page using Selenium (because of infinite loading)
+def get_fully_loaded_html(url):
+    chrome_options = webdriver.ChromeOptions()
+    chrome_options.add_argument("--headless")  # Run in headless mode
+
+    driver = webdriver.Chrome(options=chrome_options)
+    driver.get(url)
+
+    TIME_TO_WAIT = 2  # seconds
+
+    last_height = driver.execute_script("return document.body.scrollHeight")
+
+    while True:
+        driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
+        time.sleep(TIME_TO_WAIT)
+        new_height = driver.execute_script("return document.body.scrollHeight")
+        if new_height == last_height:
+            break
+        last_height = new_height
+
+    html_content = driver.page_source
+    driver.quit()
+    return html_content
 
 
 def scrape_jobs_ge(chosen_job_location, chosen_job_category, chosen_job_keyword):
@@ -112,15 +135,15 @@ def scrape_jobs_ge(chosen_job_location, chosen_job_category, chosen_job_keyword)
     ###############################
     # Scrape the website
 
-    ####### TO RUN LOCALLY
-    # Load the saved local HTML file
-    with open("application/temps/main_page.html", "r", encoding="utf-8") as file:
-        html_content = file.read()
-    soup = BeautifulSoup(html_content, "html.parser")
+    # ####### TO RUN LOCALLY
+    # # Load the saved local HTML file
+    # with open("application/temps/main_page.html", "r", encoding="utf-8") as file:
+    #     html_content = file.read()
+    # soup = BeautifulSoup(html_content, "html.parser")
 
-    ####### TO RUN ON SERVER
-    # page_to_scrape = requests.get(page_URL)
-    # soup = BeautifulSoup(page_to_scrape.text, "html.parser")
+    ###### TO RUN ON SERVER
+    html_content = get_fully_loaded_html(page_URL)
+    soup = BeautifulSoup(html_content, "html.parser")
 
     titles = soup.find_all("a", attrs={"class": "vip"})
     print(titles)
@@ -169,8 +192,6 @@ def scrape_jobs_ge(chosen_job_location, chosen_job_category, chosen_job_keyword)
                 print(str(new_job))
                 jobs_ge_list.append(new_job)
                 count += 1
-                if count > 2:
-                    break
             except Exception as e:
                 # print(f"Error: {e}")
                 continue

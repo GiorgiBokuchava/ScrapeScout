@@ -9,6 +9,14 @@ from application.scrape import get_jobs
 @app.route("/")
 @app.route("/home")
 def home_page():
+    flash("A simple primary alert—check it out!", "primary")
+    flash("A simple secondary alert—check it out!", "secondary")
+    flash("A simple success alert—check it out!", "success")
+    flash("A simple danger alert—check it out!", "danger")
+    flash("A simple warning alert—check it out!", "warning")
+    flash("A simple info alert—check it out!", "info")
+    flash("A simple light alert—check it out!", "light")
+    flash("A simple dark alert—check it out!", "dark")
     return render_template("home.html")
 
 
@@ -19,11 +27,13 @@ def register():
         user_to_create = User(
             username=form.username.data,
             email_address=form.email_address.data,
-            password=form.password_field1.data,
+            password=form.password.data,
         )
         db.session.add(user_to_create)
         db.session.commit()
         flash("Account created successfully!", "success")
+        login_user(user_to_create)
+
         return redirect(url_for("home_page"))
 
     if form.errors != {}:

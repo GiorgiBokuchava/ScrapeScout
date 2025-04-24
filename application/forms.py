@@ -23,12 +23,12 @@ class RegisterForm(FlaskForm):
     email_address = StringField(
         label="Email Address", validators=[Email(), DataRequired(), Email()]
     )
-    password_field1 = PasswordField(
+    password = PasswordField(
         label="Password", validators=[Length(min=5, max=100), DataRequired()]
     )
-    password_field2 = PasswordField(
+    confirm_password = PasswordField(
         label="Confirm Password",
-        validators=[EqualTo("password_field1"), DataRequired()],
+        validators=[EqualTo("password"), DataRequired()],
     )
     submit = SubmitField(label="Create Account")
 

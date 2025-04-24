@@ -1,6 +1,7 @@
 import application.jobs_ge as jobs_ge
 
 
+# TODO New plan: scrape the entire main page using selenium to get basic info and save it to the database. If the user clicks on a job or adds to favorite, scrape the details using requests.
 def get_jobs(searched_location, searched_category, searched_keyword):
     jobs_ge_list = jobs_ge.scrape_jobs_ge(
         searched_location, searched_category, searched_keyword
