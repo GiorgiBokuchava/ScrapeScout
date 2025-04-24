@@ -9,14 +9,6 @@ from application.scrape import get_jobs
 @app.route("/")
 @app.route("/home")
 def home_page():
-    flash("A simple primary alert—check it out!", "primary")
-    flash("A simple secondary alert—check it out!", "secondary")
-    flash("A simple success alert—check it out!", "success")
-    flash("A simple danger alert—check it out!", "danger")
-    flash("A simple warning alert—check it out!", "warning")
-    flash("A simple info alert—check it out!", "info")
-    flash("A simple light alert—check it out!", "light")
-    flash("A simple dark alert—check it out!", "dark")
     return render_template("home.html")
 
 
@@ -54,7 +46,7 @@ def login():
             flash("Login successful!", "success")
             return redirect(url_for("home_page"))
         else:
-            flash("Login failed. Please check your credentials.", "danger")
+            flash("Login failed. Please check your credentials.", "warning")
 
     return render_template("login.html", form=form)
 
@@ -62,7 +54,7 @@ def login():
 @app.route("/logout")
 def logout():
     logout_user()
-    flash("You have been logged out.", "success")
+    flash("You have been logged out.", "primary")
     return redirect(url_for("home_page"))
 
 
@@ -77,9 +69,6 @@ def jobs():
         job_location = form.locations.data
         job_category = form.categories.data
         job_keyword = form.keyword.data
-        # Here you would typically call your scraping function with the provided parameters
-        # For example:
-        # jobs = scrape_jobs(job_location, job_category, job_keyword)
 
         jobs_list = get_jobs(
             searched_location=job_location,
@@ -87,21 +76,29 @@ def jobs():
             searched_keyword=job_keyword,
         )
 
-        # Convert each Job object into a dictionary for JSON serialization
+        # Convert each Job object into a dictionary and add new Job objects to the database
         jobs_data = []
         for job in jobs_list:
             jobs_data.append(
                 {
                     "title": job.title,
-                    "company": job.company_name,
-                    "url": job.job_URL,
-                    "posted_time": job.posted_time,
+                    "company": job.company,
+                    "url": job.url,
+                    "date_posted": job.date_posted,
                     "description": job.description,
                 }
             )
 
+            new_job = Job(
+                title=job.title,
+                company=job.company,
+                description=job.description,
+                url=job.url,
+                date_posted=job.date_posted,
+            )
+            db.session.add(new_job)
+        db.session.commit()
+
         return jsonify({"jobs": jobs_data})
     else:
-        # You may include form error details for debugging
         return jsonify({"jobs": [], "error": form.errors}), 400
-    # return render_template("jobs.html", form=form, jobs=jobs)

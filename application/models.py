@@ -30,13 +30,16 @@ class User(db.Model, UserMixin):
 
 class Job(db.Model):
     id = db.Column(db.Integer, primary_key=True, unique=True, nullable=False)
-    title = db.Column(db.String(100), nullable=False)
-    location = db.Column(db.String(100), nullable=False)
-    company = db.Column(db.String(100), nullable=False)
-    description = db.Column(db.Text, nullable=False)
-    url = db.Column(db.String(200), nullable=False)
-    date_posted = db.Column(db.DateTime, nullable=False)
-    owner_user_id = db.Column(db.Integer, db.ForeignKey("user.id"), nullable=False)
+    title = db.Column(db.String(100), nullable=False, default="N/A")
+    location = db.Column(db.String(100), nullable=False, default="N/A")
+    company = db.Column(db.String(100), nullable=False, default="N/A")
+    description = db.Column(db.Text, nullable=False, default="N/A")
+    url = db.Column(db.String(200), nullable=False, default="N/A")
+    date_posted = db.Column(db.String(20), nullable=False, default="N/A")
+    salary = db.Column(db.String(50), nullable=False, default="N/A")
+    email = db.Column(db.String(100), nullable=False, default="N/A")
+    favorite = db.Column(db.Boolean, default=False)
+    owner_user_id = db.Column(db.Integer, db.ForeignKey("user.id"), nullable=True)
 
     def __repr__(self):
         return f"<Job {self.title}>"

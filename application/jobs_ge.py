@@ -1,10 +1,11 @@
 from bs4 import BeautifulSoup
 import requests
 import re
-from application.Job import Job
+from application.models import Job
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
 import time
+from application import db
 
 job_locations = {
     "": "Any",
@@ -141,15 +142,16 @@ def scrape_jobs_ge(chosen_job_location, chosen_job_category, chosen_job_keyword)
     #     html_content = file.read()
     # soup = BeautifulSoup(html_content, "html.parser")
 
-    ###### TO RUN ON SERVER
+    ##### TO RUN ON SERVER
     html_content = get_fully_loaded_html(page_URL)
     soup = BeautifulSoup(html_content, "html.parser")
 
-    titles = soup.find_all("a", attrs={"class": "vip"})
-    print(titles)
+    # titles = soup.find_all("a", attrs={"class": "vip"})
+    # print(titles)
 
     jobs_ge_list = []
 
+    # Jobs
     tr_elements = soup.find_all("tr")
 
     # def getSalary(job_URL):
@@ -161,37 +163,53 @@ def scrape_jobs_ge(chosen_job_location, chosen_job_category, chosen_job_keyword)
         if len(tds) >= 4:
             try:
                 job_title = tds[1].find("a").text.strip()
+                location = ""
                 company_name = tds[3].text.strip()
+                if company_name == "ყველა ვაკანსიაერთ გვერდზე":
+                    continue
                 job_URL = "https://www.jobs.ge" + tds[1].find("a")["href"]
 
-                job_description_element = extractDescription(job_URL)
-                job_description_text = (
-                    job_description_element.text.strip()
-                    if hasattr(job_description_element, "text")
-                    else str(job_description_element)
-                )
+                # job_description_element = extractDescription(job_URL)
+                # job_description_text = (
+                #     job_description_element.text.strip()
+                #     if hasattr(job_description_element, "text")
+                #     else str(job_description_element)
+                # )
+                job_description_text = "..."
 
                 posted_time = tds[4].text.strip()
                 salary = "N/A"
 
-                email = extractEmail(job_description_text)
+                # email = extractEmail(job_description_text)
+                email = ""
 
                 favorite = False
 
                 new_job = Job(
                     title=job_title,
-                    company_name=company_name,
-                    job_URL=job_URL,
+                    location=location,
+                    company=company_name,
                     description=job_description_text,
-                    posted_time=posted_time,
+                    url=job_URL,
+                    date_posted=posted_time,
                     salary=salary,
                     email=email,
                     favorite=favorite,
                 )
 
-                print(str(new_job))
-                jobs_ge_list.append(new_job)
-                count += 1
+                if not any(
+                    db.session.query(Job)
+                    .filter_by(date_posted=new_job.date_posted, url=new_job.url)
+                    .all()
+                ):
+                    jobs_ge_list.append(new_job)
+                    print(str(new_job))
+                else:
+                    print(
+                        f"Job already exists in the database: {new_job.title} - {new_job.company_name} \n Stopping the scraping process."
+                    )
+                    break
+                # print(str(new_job))
             except Exception as e:
                 # print(f"Error: {e}")
                 continue

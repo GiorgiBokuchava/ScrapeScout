@@ -71,8 +71,8 @@ document.addEventListener("DOMContentLoaded", () => {
         }
 
         // Timer settings per flash message
-        const totalDuration = 5000; // duration in ms
-        const intervalTime = 50; // update interval in ms
+        const totalDuration = 3000; // duration in ms
+        const intervalTime = 10; // update interval in ms
         const steps = totalDuration / intervalTime;
         const decrement = 360 / steps;
         let angle = 360;

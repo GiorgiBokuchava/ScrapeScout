@@ -11,8 +11,7 @@ def get_jobs(searched_location, searched_category, searched_keyword):
     all_jobs_list = []
     for job in jobs_ge_list:
         if not any(
-            existing_job.title == job.title
-            and existing_job.company_name == job.company_name
+            existing_job.title == job.title and existing_job.company == job.company
             for existing_job in all_jobs_list
         ):
             all_jobs_list.append(job)
