@@ -6,46 +6,10 @@ from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
 import time
 from application import db
+import application.search_options as search_options
 
-job_locations = {
-    "": "Any",
-    1: "Tbilisi",
-    15: "Abkhazia",
-    14: "Adjara",
-    9: "Guria",
-    8: "Imereti",
-    3: "Kakheti",
-    4: "Mtskhe-Mtianeti",
-    12: "Ratcha-Letchkhumi, qv. Svaneti",
-    13: "Samegrelo-Zemo Svaneti",
-    7: "Samtskhe-Javakheti",
-    5: "Kvemo-Kartli",
-    6: "Shida-Kartli",
-    16: "Abroad",
-    17: "Remote",
-}  # &lid=NUMBER
-
-job_categories = {
-    "": "Any",
-    1: "Administration/Management",
-    3: "Finances/Statistics",
-    2: "Sales",
-    4: "PR/Marketing",
-    18: "General Technical Personnel",
-    5: "Logistics/Transport/Distribution",
-    11: "Building/Renovation",
-    16: "Cleaning",
-    17: "Security",
-    6: "IT/Programming",
-    13: "Media/Publishing",
-    12: "Education",
-    7: "Law",
-    8: "Medicine/Pharmacy",
-    14: "Beauty/Fashion",
-    10: "Food",
-    9: "Other",
-}  # &cid=NUMBER
-
+job_locations = search_options.search_config["jobs_ge"]["locations"]
+job_categories = search_options.search_config["jobs_ge"]["categories"]
 job_keyword = ""  # &q=KEYWORD
 
 
@@ -78,7 +42,7 @@ def extractEmail(description):
 # Get html content of the page using Selenium (because of infinite loading)
 def get_fully_loaded_html(url):
     chrome_options = webdriver.ChromeOptions()
-    chrome_options.add_argument("--headless")  # Run in headless mode
+    # chrome_options.add_argument("--headless")  # Run in headless mode
 
     driver = webdriver.Chrome(options=chrome_options)
     driver.get(url)
@@ -165,9 +129,12 @@ def scrape_jobs_ge(chosen_job_location, chosen_job_category, chosen_job_keyword)
                 job_title = tds[1].find("a").text.strip()
                 location = ""
                 company_name = tds[3].text.strip()
-                if company_name == "ყველა ვაკანსიაერთ გვერდზე":
+                if (
+                    company_name == "ყველა ვაკანსიაერთ გვერდზე"
+                    or company_name == "ყველა ვაკანსიაერთ გვერდზე"
+                ):
                     continue
-                job_URL = "https://www.jobs.ge" + tds[1].find("a")["href"]
+                job_URL = ("https://www.jobs.ge" + tds[1].find("a")["href"]).strip()
 
                 # job_description_element = extractDescription(job_URL)
                 # job_description_text = (
@@ -197,21 +164,21 @@ def scrape_jobs_ge(chosen_job_location, chosen_job_category, chosen_job_keyword)
                     favorite=favorite,
                 )
 
-                if not any(
+                if (
                     db.session.query(Job)
                     .filter_by(date_posted=new_job.date_posted, url=new_job.url)
-                    .all()
+                    .first()
                 ):
-                    jobs_ge_list.append(new_job)
-                    print(str(new_job))
-                else:
                     print(
-                        f"Job already exists in the database: {new_job.title} - {new_job.company_name} \n Stopping the scraping process."
+                        f"Job already exists in the database: {new_job.title} - {new_job.company} \n Skipping."
                     )
-                    break
-                # print(str(new_job))
+                    continue
+                else:
+                    jobs_ge_list.append(new_job)
+                    print("New job added" + str(new_job))
+
             except Exception as e:
-                # print(f"Error: {e}")
+                print(f"Error: {e}")
                 continue
 
     return jobs_ge_list

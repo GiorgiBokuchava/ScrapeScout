@@ -7,3 +7,5 @@ env/
 instance/
 
 .env
+
+test.py

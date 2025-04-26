@@ -1,5 +1,8 @@
 from application import db, bcrypt, login_manager
 from flask_login import UserMixin
+from datetime import datetime, timezone
+from sqlalchemy import Column, DateTime, func
+from pytz import timezone
 
 
 @login_manager.user_loader
@@ -40,6 +43,12 @@ class Job(db.Model):
     email = db.Column(db.String(100), nullable=False, default="N/A")
     favorite = db.Column(db.Boolean, default=False)
     owner_user_id = db.Column(db.Integer, db.ForeignKey("user.id"), nullable=True)
+    date_populated = db.Column(
+        db.DateTime(timezone=True),
+        nullable=False,
+        server_default=func.now(),
+        default=lambda: datetime.now(timezone("Asia/Tbilisi")),
+    )
 
     def __repr__(self):
         return f"<Job {self.title}>"

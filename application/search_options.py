@@ -1,6 +1,6 @@
 search_config = {
     "jobs_ge": {
-        "locations": {
+        "locations": {  # &lid=NUMBER
             "": "Any",
             1: "Tbilisi",
             15: "Abkhazia",
@@ -17,7 +17,7 @@ search_config = {
             16: "Abroad",
             17: "Remote",
         },
-        "categories": {
+        "categories": {  # &cid=NUMBER
             "": "Any",
             1: "Administration/Management",
             3: "Finances/Statistics",
