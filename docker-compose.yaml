@@ -1,0 +1,19 @@
+services:
+  app:
+    build: .
+    ports: ["8000:8000"]
+    depends_on: [db]
+    environment:
+      DATABASE_URL: postgres://scrape:pass@db:5432/scrapedb
+
+  db:
+    image: postgres:16
+    environment:
+      POSTGRES_USER: scrape
+      POSTGRES_PASSWORD: pass
+      POSTGRES_DB: scrapedb
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+volumes:
+  pgdata:

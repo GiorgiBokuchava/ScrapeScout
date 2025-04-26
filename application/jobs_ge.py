@@ -6,8 +6,6 @@ from application.models import Job
 import application.search_options as search_options
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
-from selenium.webdriver.chrome.service import Service
-from pathlib import Path
 import uuid, os, time
 
 
@@ -47,14 +45,11 @@ def build_driver() -> webdriver.Chrome:
     chrome_opts.add_argument("--headless=new")
     chrome_opts.add_argument("--no-sandbox")
     chrome_opts.add_argument("--disable-dev-shm-usage")
-    chrome_opts.add_argument("--disable-gpu")
-    chrome_opts.add_argument("--window-size=1920,1080")
-    chrome_opts.add_argument(f"--user-data-dir=/tmp/chrome-{uuid.uuid4()}")
+    # chrome_opts.add_argument("--disable-gpu")
+    # chrome_opts.add_argument("--window-size=1920,1080")
+    # chrome_opts.add_argument(f"--user-data-dir=/tmp/chrome-{uuid.uuid4()}")
 
-    driver_path = Path(__file__).with_name("chromedriver")
-    service = Service(driver_path)
-
-    return webdriver.Chrome(service=service, options=chrome_opts)
+    return webdriver.Chrome(options=chrome_opts)
 
 
 # Get html content of the page using Selenium (because of infinite loading)
