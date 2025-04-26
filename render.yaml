@@ -1,0 +1,12 @@
+services:
+  - type: web
+    name: scrape-scout-web
+    env: python
+    region: frankfurt
+    plan: free
+    branch: master
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn run:app
+    envVars:
+      - key: FLASK_ENV
+        value: production
