@@ -1,12 +1,15 @@
 from bs4 import BeautifulSoup
 import requests
 import re
+from application import db
 from application.models import Job
+import application.search_options as search_options
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
-import time
-from application import db
-import application.search_options as search_options
+from selenium.webdriver.chrome.service import Service
+from pathlib import Path
+import uuid, os, time
+
 
 job_locations = search_options.search_config["jobs_ge"]["locations"]
 job_categories = search_options.search_config["jobs_ge"]["categories"]
@@ -39,12 +42,24 @@ def extractEmail(description):
     return email if email else "N/A"
 
 
+def build_driver() -> webdriver.Chrome:
+    chrome_opts = Options()
+    chrome_opts.add_argument("--headless=new")
+    chrome_opts.add_argument("--no-sandbox")
+    chrome_opts.add_argument("--disable-dev-shm-usage")
+    chrome_opts.add_argument("--disable-gpu")
+    chrome_opts.add_argument("--window-size=1920,1080")
+    chrome_opts.add_argument(f"--user-data-dir=/tmp/chrome-{uuid.uuid4()}")
+
+    driver_path = Path(__file__).with_name("chromedriver")
+    service = Service(driver_path)
+
+    return webdriver.Chrome(service=service, options=chrome_opts)
+
+
 # Get html content of the page using Selenium (because of infinite loading)
 def get_fully_loaded_html(url):
-    chrome_options = webdriver.ChromeOptions()
-    # chrome_options.add_argument("--headless")  # Run in headless mode
-
-    driver = webdriver.Chrome(options=chrome_options)
+    driver = build_driver()
     driver.get(url)
 
     TIME_TO_WAIT = 2  # seconds
@@ -170,7 +185,7 @@ def scrape_jobs_ge(chosen_job_location, chosen_job_category, chosen_job_keyword)
                     .first()
                 ):
                     print(
-                        f"Job already exists in the database: {new_job.title} - {new_job.company} \n Skipping."
+                        f"Job already exists in the database: {new_job.title} - {new_job.company}, Skipping."
                     )
                     continue
                 else:
