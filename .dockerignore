@@ -7,4 +7,3 @@ instance/
 application/chromedriver
 .git
 .env
-.env.online
