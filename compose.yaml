@@ -21,10 +21,6 @@ services:
     depends_on:
       db:
         condition: service_healthy
-    command: >
-      /bin/sh -c "
-      flask db upgrade &&
-      gunicorn -b 0.0.0.0:8000 run:app"
     ports: ["8000:8000"]
 
 volumes:
