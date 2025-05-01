@@ -35,4 +35,4 @@ ENV PYTHONUNBUFFERED=1 \
 EXPOSE 8000
 
 # Run migrations then start the application
-CMD ["sh", "-c", "flask db upgrade && exec gunicorn -b 0.0.0.0:${PORT:-8000} run:app"]    
+CMD ["sh", "-c", "flask db upgrade && exec gunicorn -b 0.0.0.0:${PORT:-8000} run:app"]

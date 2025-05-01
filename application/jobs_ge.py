@@ -144,6 +144,7 @@ def scrape_jobs_ge(chosen_job_location, chosen_job_category, chosen_job_keyword)
                     or company_name == "ყველა ვაკანსიაერთ გვერდზე"
                 ):
                     continue
+
                 job_URL = ("https://www.jobs.ge" + tds[1].find("a")["href"]).strip()
 
                 # job_description_element = extractDescription(job_URL)
@@ -155,6 +156,9 @@ def scrape_jobs_ge(chosen_job_location, chosen_job_category, chosen_job_keyword)
                 job_description_text = "..."
 
                 posted_time = tds[4].text.strip()
+                if posted_time == "ყველა ვაკანსიაერთ გვერდზე":
+                    continue
+
                 salary = "N/A"
 
                 # email = extractEmail(job_description_text)
