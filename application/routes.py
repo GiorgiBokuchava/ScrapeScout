@@ -6,6 +6,11 @@ from flask_login import login_user, logout_user
 from application.scrape import get_jobs
 
 
+@app.route("/healthz")
+def healthz():
+    return "OK", 200
+
+
 @app.route("/")
 @app.route("/home")
 def home_page():
