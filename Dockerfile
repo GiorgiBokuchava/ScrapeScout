@@ -31,4 +31,4 @@
         CHROMEDRIVER_PATH=/usr/bin/chromedriver
     
     EXPOSE 8000
-    CMD ["sh", "-c", "flask db upgrade && exec gunicorn -b 0.0.0.0:$PORT run:app"]
+    CMD ["sh", "-c", "flask db upgrade && exec gunicorn -b 0.0.0.0:${PORT:-8000} run:app"]

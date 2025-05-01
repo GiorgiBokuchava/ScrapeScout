@@ -6,3 +6,5 @@ __pycache__/
 instance/
 application/chromedriver
 .git
+.env
+.env.online

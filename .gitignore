@@ -7,5 +7,6 @@ env/
 instance/
 
 .env
+.env.online
 
 test.py
