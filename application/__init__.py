@@ -15,7 +15,9 @@ app = Flask(
 )
 
 # Configurations
-app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///../instance/scrape.db"
+app.config["SQLALCHEMY_DATABASE_URI"] = os.getenv(
+    "DATABASE_URL", "sqlite:///../instance/scrape.db"
+)
 app.config["SECRET_KEY"] = os.getenv("SCRAPE_SCOUT_SECRET_KEY", "default_secret_key")
 
 # Extensions
