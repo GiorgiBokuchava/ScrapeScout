@@ -18,6 +18,9 @@ services:
     build: .
     container_name: scrapescout-app
     env_file: .env
+    working_dir: /app
+    volumes:
+      - .:/app
     depends_on:
       db:
         condition: service_healthy

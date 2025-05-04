@@ -35,6 +35,7 @@ class Job(db.Model):
     id = db.Column(db.Integer, primary_key=True, unique=True, nullable=False)
     title = db.Column(db.String(100), nullable=False, default="N/A")
     location = db.Column(db.String(100), nullable=False, default="N/A")
+    category = db.Column(db.String(100), nullable=False, default="N/A")
     company = db.Column(db.String(100), nullable=False, default="N/A")
     description = db.Column(db.Text, nullable=False, default="N/A")
     url = db.Column(db.String(200), nullable=False, default="N/A")

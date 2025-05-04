@@ -94,16 +94,6 @@ def jobs():
                 }
             )
 
-            new_job = Job(
-                title=job.title,
-                company=job.company,
-                description=job.description,
-                url=job.url,
-                date_posted=job.date_posted,
-            )
-            db.session.add(new_job)
-        db.session.commit()
-
         return jsonify({"jobs": jobs_data})
     else:
         return jsonify({"jobs": [], "error": form.errors}), 400

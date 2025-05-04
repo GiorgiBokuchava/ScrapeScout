@@ -1,4 +1,10 @@
 search_config = {
+    "MASTER": {
+        "LOCATIONS": [
+            "Any",
+            "Tbilisi",
+        ]
+    },
     "jobs_ge": {
         "locations": {  # &lid=NUMBER
             "": "Any",

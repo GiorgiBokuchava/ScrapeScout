@@ -88,13 +88,15 @@ def scrape_jobs_ge(chosen_job_location, chosen_job_category, chosen_job_keyword)
 
     # Map the chosen location string to its dictionary key
     for key, value in job_locations.items():
-        if value == chosen_job_location:
+        if key == chosen_job_location:
             user_preferences["job_location"] = key
+            break
 
     # Map the chosen category string to its dictionary key
     for key, value in job_categories.items():
-        if value == chosen_job_category:
+        if key == chosen_job_category:
             user_preferences["job_category"] = key
+            break
 
     # If no keyword, keep it empty
     if chosen_job_keyword == "":
@@ -138,11 +140,10 @@ def scrape_jobs_ge(chosen_job_location, chosen_job_category, chosen_job_keyword)
             try:
                 job_title = tds[1].find("a").text.strip()
                 location = ""
+                category = ""
                 company_name = tds[3].text.strip()
-                if (
-                    company_name == "ყველა ვაკანსიაერთ გვერდზე"
-                    or company_name == "ყველა ვაკანსიაერთ გვერდზე"
-                ):
+                skip_words = ["ყველა", "ვაკანსია", "ერთ", "გვერდზე"]
+                if any(word in company_name for word in skip_words):
                     continue
 
                 job_URL = ("https://www.jobs.ge" + tds[1].find("a")["href"]).strip()
@@ -156,7 +157,8 @@ def scrape_jobs_ge(chosen_job_location, chosen_job_category, chosen_job_keyword)
                 job_description_text = "..."
 
                 posted_time = tds[4].text.strip()
-                if posted_time == "ყველა ვაკანსიაერთ გვერდზე":
+                skip_words = ["ყველა", "ვაკანსია", "ერთ", "გვერდზე"]
+                if any(word in posted_time for word in skip_words):
                     continue
 
                 salary = "N/A"
@@ -169,6 +171,7 @@ def scrape_jobs_ge(chosen_job_location, chosen_job_category, chosen_job_keyword)
                 new_job = Job(
                     title=job_title,
                     location=location,
+                    category=category,
                     company=company_name,
                     description=job_description_text,
                     url=job_URL,
@@ -178,18 +181,8 @@ def scrape_jobs_ge(chosen_job_location, chosen_job_category, chosen_job_keyword)
                     favorite=favorite,
                 )
 
-                if (
-                    db.session.query(Job)
-                    .filter_by(date_posted=new_job.date_posted, url=new_job.url)
-                    .first()
-                ):
-                    print(
-                        f"Job already exists in the database: {new_job.title} - {new_job.company}, Skipping."
-                    )
-                    continue
-                else:
-                    jobs_ge_list.append(new_job)
-                    print("New job added" + str(new_job))
+                jobs_ge_list.append(new_job)
+                print(f"Job added: {job_title} - {company_name}")
 
             except Exception as e:
                 print(f"Error: {e}")
