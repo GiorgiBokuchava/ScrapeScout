@@ -74,6 +74,7 @@ def index_all_jobs():
 
 # TODO New plan: scrape the entire main page using selenium to get basic info and save it to the database. If the user clicks on a job or adds to favorite, scrape the details using requests.
 def get_jobs(searched_location, searched_category, searched_keyword):
+    index_all_jobs()
     query = db.session.query(Job)
 
     if searched_location != "ALL":

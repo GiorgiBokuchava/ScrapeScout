@@ -65,26 +65,23 @@ def scrape_jobs_ge(chosen_job_location, chosen_job_category, chosen_job_keyword)
     This function scrapes jobs.ge for the given location, category, and keyword.
     It returns a list of Job objects.
     """
-    # Get mappings from master config to jobs.ge specific values
-    location_mapping = get_master_to_site_mapping("jobs_ge", "locations")
-    category_mapping = get_master_to_site_mapping("jobs_ge", "categories")
+    # Get the site-specific values directly since we're receiving numeric IDs
+    # No need to map - the incoming values are already in site-specific format
+    site_location = chosen_job_location if chosen_job_location != "ALL" else ""
+    site_category = chosen_job_category if chosen_job_category != "ALL" else ""
 
-    # Convert master config values to site-specific values
-    site_location = location_mapping.get(
-        MASTER_CONFIG["locations"].get(chosen_job_location, ""), ""
-    )
-    site_category = category_mapping.get(
-        MASTER_CONFIG["categories"].get(chosen_job_category, ""), ""
-    )
-
-    # Build the URL using site-specific values
-    page_URL = f"https://www.jobs.ge/?page=1&q={chosen_job_keyword}&cid={site_category}&lid={site_location}&jid="
+    # Construct the URL with the site-specific values
+    url = f"https://jobs.ge/?page=1&q={chosen_job_keyword}"
+    if site_category:
+        url += f"&cid={site_category}"
+    if site_location:
+        url += f"&lid={site_location}&jid="
 
     ###############################
     # Scrape the website
 
     ##### TO RUN ON SERVER
-    html_content = get_fully_loaded_html(page_URL)
+    html_content = get_fully_loaded_html(url)
     soup = BeautifulSoup(html_content, "html.parser")
 
     jobs_ge_list = []

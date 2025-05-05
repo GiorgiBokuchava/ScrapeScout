@@ -113,11 +113,22 @@ search_preferences = {
 
 
 def get_master_to_site_mapping(site_name, category_type):
-    """Get mapping from master config values to site-specific values"""
+    """Get mapping from master config values to site-specific values.
+    Maps from MASTER_CONFIG values to site-specific IDs/values.
+    e.g. "Tbilisi" -> "1" for jobs.ge
+    """
+    mappings = {}
     site_config = search_config.get(site_name, {}).get(category_type, {})
-    return {v: k for k, v in site_config.items()}
+    for site_val, master_val in site_config.items():
+        # Skip empty values to avoid incorrect mappings
+        if site_val != "":
+            mappings[master_val] = site_val
+    return mappings
 
 
 def get_site_to_master_mapping(site_name, category_type):
-    """Get mapping from site-specific values to master config values"""
+    """Get mapping from site-specific values to master config values.
+    Maps from site-specific IDs/values to MASTER_CONFIG values.
+    e.g. "1" -> "Tbilisi" for jobs.ge
+    """
     return search_config.get(site_name, {}).get(category_type, {})
