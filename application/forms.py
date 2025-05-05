@@ -2,6 +2,7 @@ from flask_wtf import FlaskForm
 from wtforms import StringField, PasswordField, SubmitField, BooleanField, SelectField
 from wtforms.validators import DataRequired, Length, EqualTo, Email, ValidationError
 from application.models import User
+from application.search_options import MASTER_CONFIG
 
 
 class RegisterForm(FlaskForm):
@@ -43,51 +44,16 @@ class LoginForm(FlaskForm):
 class JobSearchForm(FlaskForm):
     locations = SelectField(
         label="Job Location",
-        choices=[
-            ("All", "All"),
-            ("Tbilisi", "Tbilisi"),
-            ("Abkhazia", "Abkhazia"),
-            ("Adjara", "Adjara"),
-            ("Guria", "Guria"),
-            ("Imereti", "Imereti"),
-            ("Kakheti", "Kakheti"),
-            ("Mtskheta-Mtianeti", "Mtskheta-Mtianeti"),
-            ("Ratcha-Letchkhumi, qv. Svaneti", "Ratcha-Letchkhumi, qv. Svaneti"),
-            ("Samegrelo-Zemo Svaneti", "Samegrelo-Zemo Svaneti"),
-            ("Samtskhe-Javakheti", "Samtskhe-Javakheti"),
-            ("Kvemo-Kartli", "Kvemo-Kartli"),
-            ("Shida-Kartli", "Shida-Kartli"),
-            ("Abroad", "Abroad"),
-            ("Remote", "Remote"),
-        ],
+        choices=[(key, value) for key, value in MASTER_CONFIG["locations"].items()],
         validators=[DataRequired()],
-        default="All",
+        default="ALL",
     )
 
     categories = SelectField(
         label="Job Category",
-        choices=[
-            ("Any", "Any"),
-            ("Administration/Management", "Administration/Management"),
-            ("Finances/Statistics", "Finances/Statistics"),
-            ("Sales", "Sales"),
-            ("PR/Marketing", "PR/Marketing"),
-            ("General Technical Personnel", "General Technical Personnel"),
-            ("Logistics/Transport/Distribution", "Logistics/Transport/Distribution"),
-            ("Building/Renovation", "Building/Renovation"),
-            ("Cleaning", "Cleaning"),
-            ("Security", "Security"),
-            ("IT/Programming", "IT/Programming"),
-            ("Media/Publishing", "Media/Publishing"),
-            ("Education", "Education"),
-            ("Law", "Law"),
-            ("Medicine/Pharmacy", "Medicine/Pharmacy"),
-            ("Beauty/Fashion", "Beauty/Fashion"),
-            ("Food", "Food"),
-            ("Other", "Other"),
-        ],
+        choices=[(key, value) for key, value in MASTER_CONFIG["categories"].items()],
         validators=[DataRequired()],
-        default="Any",
+        default="ALL",
     )
 
-    keyword = StringField(label="Keyword")
+    keyword = StringField(label="Search by keyword")

@@ -152,7 +152,6 @@ document.addEventListener("DOMContentLoaded", () => {
           </li>
         `;
                         console.log(job);
-                        // TODO filters dont work. plan: add indexing feature and integrate with the search
                     });
                     html += "</ul>";
                     document.getElementById("results-container").innerHTML = html;

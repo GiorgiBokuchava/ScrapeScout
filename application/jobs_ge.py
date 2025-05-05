@@ -3,14 +3,12 @@ import requests
 import re
 from application import db
 from application.models import Job
-import application.search_options as search_options
+from application.search_options import get_master_to_site_mapping, MASTER_CONFIG
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
-import uuid, os, time
+import time
 
 
-job_locations = search_options.search_config["jobs_ge"]["locations"]
-job_categories = search_options.search_config["jobs_ge"]["categories"]
 job_keyword = ""  # &q=KEYWORD
 
 
@@ -25,15 +23,6 @@ def extractDescription(job_URL):
 
 def extractEmail(description):
     email = ""
-    # CHANGED: Removed 'job_URL' param from this function signature, it wasn't being used inside it.
-    # Instead, 'description' is passed directly and we rely on the HTML chunk we already have.
-    """
-    # If your intention was to read an <a>mailto link> from the same page:
-    job_page = requests.get(job_URL)
-    job_soup = BeautifulSoup(job_page.text, "html.parser")
-    email = job_soup.find("a", href=re.compile(r"^mailto:"))
-    return email.text if email else "N/A"
-    """
     found = re.search(r"[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}", description)
     if found:
         email = found.group(0)
@@ -45,9 +34,6 @@ def build_driver() -> webdriver.Chrome:
     chrome_opts.add_argument("--headless=new")
     chrome_opts.add_argument("--no-sandbox")
     chrome_opts.add_argument("--disable-dev-shm-usage")
-    # chrome_opts.add_argument("--disable-gpu")
-    # chrome_opts.add_argument("--window-size=1920,1080")
-    # chrome_opts.add_argument(f"--user-data-dir=/tmp/chrome-{uuid.uuid4()}")
 
     return webdriver.Chrome(options=chrome_opts)
 
@@ -79,59 +65,32 @@ def scrape_jobs_ge(chosen_job_location, chosen_job_category, chosen_job_keyword)
     This function scrapes jobs.ge for the given location, category, and keyword.
     It returns a list of Job objects.
     """
-    # CHANGED: user_preferences dict remains local to the function.
-    user_preferences = {
-        "job_location": "",
-        "job_category": "",
-        "job_keyword": "",
-    }
+    # Get mappings from master config to jobs.ge specific values
+    location_mapping = get_master_to_site_mapping("jobs_ge", "locations")
+    category_mapping = get_master_to_site_mapping("jobs_ge", "categories")
 
-    # Map the chosen location string to its dictionary key
-    for key, value in job_locations.items():
-        if key == chosen_job_location:
-            user_preferences["job_location"] = key
-            break
+    # Convert master config values to site-specific values
+    site_location = location_mapping.get(
+        MASTER_CONFIG["locations"].get(chosen_job_location, ""), ""
+    )
+    site_category = category_mapping.get(
+        MASTER_CONFIG["categories"].get(chosen_job_category, ""), ""
+    )
 
-    # Map the chosen category string to its dictionary key
-    for key, value in job_categories.items():
-        if key == chosen_job_category:
-            user_preferences["job_category"] = key
-            break
-
-    # If no keyword, keep it empty
-    if chosen_job_keyword == "":
-        job_keyword = ""
-    else:
-        job_keyword = chosen_job_keyword
-
-    user_preferences["job_keyword"] = job_keyword
-
-    # Build the URL from user_preferences
-    page_URL = f"https://www.jobs.ge/?page=1&q={user_preferences['job_keyword']}&cid={user_preferences['job_category']}&lid={user_preferences['job_location']}&jid="
+    # Build the URL using site-specific values
+    page_URL = f"https://www.jobs.ge/?page=1&q={chosen_job_keyword}&cid={site_category}&lid={site_location}&jid="
 
     ###############################
     # Scrape the website
-
-    # ####### TO RUN LOCALLY
-    # # Load the saved local HTML file
-    # with open("application/temps/main_page.html", "r", encoding="utf-8") as file:
-    #     html_content = file.read()
-    # soup = BeautifulSoup(html_content, "html.parser")
 
     ##### TO RUN ON SERVER
     html_content = get_fully_loaded_html(page_URL)
     soup = BeautifulSoup(html_content, "html.parser")
 
-    # titles = soup.find_all("a", attrs={"class": "vip"})
-    # print(titles)
-
     jobs_ge_list = []
 
     # Jobs
     tr_elements = soup.find_all("tr")
-
-    # def getSalary(job_URL):
-    # Too much overhead, probably not worth it
 
     for tr in tr_elements:
         tds = tr.find_all("td")
@@ -139,8 +98,10 @@ def scrape_jobs_ge(chosen_job_location, chosen_job_category, chosen_job_keyword)
         if len(tds) >= 4:
             try:
                 job_title = tds[1].find("a").text.strip()
-                location = ""
-                category = ""
+                # Use the master config value for location and category
+                location = MASTER_CONFIG["locations"].get(chosen_job_location, "")
+                category = MASTER_CONFIG["categories"].get(chosen_job_category, "")
+
                 company_name = tds[3].text.strip()
                 skip_words = ["ყველა", "ვაკანსია", "ერთ", "გვერდზე"]
                 if any(word in company_name for word in skip_words):
@@ -148,12 +109,6 @@ def scrape_jobs_ge(chosen_job_location, chosen_job_category, chosen_job_keyword)
 
                 job_URL = ("https://www.jobs.ge" + tds[1].find("a")["href"]).strip()
 
-                # job_description_element = extractDescription(job_URL)
-                # job_description_text = (
-                #     job_description_element.text.strip()
-                #     if hasattr(job_description_element, "text")
-                #     else str(job_description_element)
-                # )
                 job_description_text = "..."
 
                 posted_time = tds[4].text.strip()
@@ -163,7 +118,6 @@ def scrape_jobs_ge(chosen_job_location, chosen_job_category, chosen_job_keyword)
 
                 salary = "N/A"
 
-                # email = extractEmail(job_description_text)
                 email = ""
 
                 favorite = False
