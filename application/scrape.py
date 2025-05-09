@@ -7,8 +7,10 @@ from application.search_options import MASTER_CONFIG, search_config
 
 
 def index_all_jobs():
-    # Scrape all jobs from all sites and save them to the database
-
+    """
+    Scrape all jobs from all sites and save them to the database.
+    Commits changes after processing each category for a location.
+    """
     # Index all jobs from jobs.ge
     for location in search_config["jobs_ge"]["locations"]:
         for category in search_config["jobs_ge"]["categories"]:
@@ -21,60 +23,70 @@ def index_all_jobs():
             print(
                 f"Scraping jobs from jobs.ge for location: {location} and category: {category}"
             )
-            # Scrape jobs from jobs_ge
-            site_list = scrape_jobs_ge(location, category, "")
-            print(
-                f"Scraped {len(site_list)} jobs from jobs.ge for location: {location} and category: {category}"
-            )
 
-            # Save the scraped jobs to the database
-            new_jobs = 0
-            for job in site_list:
-                # add location as part of dedupe key
-                exists = (
-                    db.session.query(Job)
-                    .filter_by(
-                        title=job.title,
-                        url=job.url,
-                    )
-                    .first()
+            try:
+                # Scrape jobs from jobs_ge
+                site_list = scrape_jobs_ge(location, category, "")
+                print(
+                    f"Scraped {len(site_list)} jobs from jobs.ge for location: {location} and category: {category}"
                 )
-                if exists:
-                    current_app.logger.debug(
-                        "Skip existing job: %s - %s @%s",
-                        job.title,
-                        job.company,
-                        job.location,
+
+                # Save the scraped jobs to the database
+                new_jobs = 0
+                for job in site_list:
+                    # Check if job already exists
+                    exists = (
+                        db.session.query(Job)
+                        .filter_by(
+                            title=job.title,
+                            url=job.url,
+                        )
+                        .first()
                     )
-                else:
-                    db.session.add(job)
-                    new_jobs += 1
+                    if exists:
+                        current_app.logger.debug(
+                            "Skip existing job: %s - %s @%s",
+                            job.title,
+                            job.company,
+                            job.location,
+                        )
+                    else:
+                        db.session.add(job)
+                        new_jobs += 1
 
-            current_app.logger.info(
-                "Added %d new out of %d scraped (%s / %s)",
-                new_jobs,
-                len(site_list),
-                location,
-                category,
-            )
+                # Commit changes after processing each category
+                try:
+                    db.session.commit()
+                    current_app.logger.info(
+                        "Added %d new out of %d scraped (%s / %s)",
+                        new_jobs,
+                        len(site_list),
+                        location,
+                        category,
+                    )
+                except Exception as e:
+                    db.session.rollback()
+                    current_app.logger.error(
+                        f"Error committing changes for location {location}, category {category}: {str(e)}"
+                    )
 
-        # Commit changes after processing all categories for current location
-        try:
-            db.session.commit()
-            current_app.logger.info(f"Committed changes for location: {location}")
-        except Exception as e:
-            db.session.rollback()
-            current_app.logger.error(
-                f"Error committing changes for location {location}: {str(e)}"
-            )
-            raise
+            except Exception as e:
+                db.session.rollback()
+                current_app.logger.error(
+                    f"Error processing location {location}, category {category}: {str(e)}"
+                )
+                # Continue to next category instead of raising the exception
+                continue
 
     # Index all jobs from another site
+    # (Add code here when needed)
 
 
-# TODO New plan: scrape the entire main page using selenium to get basic info and save it to the database. If the user clicks on a job or adds to favorite, scrape the details using requests.
 def get_jobs(searched_location, searched_category, searched_keyword):
-    index_all_jobs()
+    """
+    Get jobs from the database based on search criteria.
+    """
+    # index_all_jobs()  # Commented out to prevent reindexing on every search
     query = db.session.query(Job)
 
     if searched_location != "ALL":

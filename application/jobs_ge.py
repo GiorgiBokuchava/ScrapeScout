@@ -3,7 +3,11 @@ import requests
 import re
 from application import db
 from application.models import Job
-from application.search_options import get_master_to_site_mapping, MASTER_CONFIG
+from application.search_options import (
+    get_master_to_site_mapping,
+    get_site_to_master_mapping,
+    MASTER_CONFIG,
+)
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
 import time
@@ -89,15 +93,24 @@ def scrape_jobs_ge(chosen_job_location, chosen_job_category, chosen_job_keyword)
     # Jobs
     tr_elements = soup.find_all("tr")
 
+    # Get the site_to_master mappings to convert numeric IDs to master config values
+    site_to_master_locations = get_site_to_master_mapping("jobs_ge", "locations")
+    site_to_master_categories = get_site_to_master_mapping("jobs_ge", "categories")
+
     for tr in tr_elements:
         tds = tr.find_all("td")
 
         if len(tds) >= 4:
             try:
                 job_title = tds[1].find("a").text.strip()
-                # Use the master config value for location and category
-                location = MASTER_CONFIG["locations"].get(chosen_job_location, "")
-                category = MASTER_CONFIG["categories"].get(chosen_job_category, "")
+
+                # Look up the master config values using the site-specific mapping
+                location = site_to_master_locations.get(
+                    site_location, "Unknown Location"
+                )
+                category = site_to_master_categories.get(
+                    site_category, "Unknown Category"
+                )
 
                 company_name = tds[3].text.strip()
                 skip_words = ["ყველა", "ვაკანსია", "ერთ", "გვერდზე"]
