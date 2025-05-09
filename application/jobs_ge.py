@@ -47,7 +47,7 @@ def get_fully_loaded_html(url):
     driver = build_driver()
     driver.get(url)
 
-    TIME_TO_WAIT = 2  # seconds
+    TIME_TO_WAIT = 3  # seconds
 
     last_height = driver.execute_script("return document.body.scrollHeight")
 
@@ -146,7 +146,7 @@ def scrape_jobs_ge(chosen_job_location, chosen_job_category, chosen_job_keyword)
                 )
 
                 jobs_ge_list.append(new_job)
-                print(f"Job added: {job_title} - {company_name}")
+                # print(f"Job added: {job_title} - {company_name}")
 
             except Exception as e:
                 print(f"Error: {e}")
