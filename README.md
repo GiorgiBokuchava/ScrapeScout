@@ -1,52 +1,54 @@
 # ScrapeScout
 
-ScrapeScout is a **Flask‑based job aggregation platform** that collects vacancies from multiple Georgian job boards (starting with *jobs.ge*) and presents them through a single, modern interface. It scrapes data, stores it in a database, and lets users search, preview and bookmark listings – all inside a Dockerised stack that runs the same locally and in the cloud.
+ScrapeScout is a Flask‑based job aggregation platform that collects vacancies from Georgian job boards (currently *jobs.ge*) and delivers a single, modern search experience. It scrapes data, stores it in a database, and lets users search, preview and bookmark listings – all inside a Dockerised stack that runs the same in development and production.
 
 ---
 
 ## Key Features
 
-* **Multi‑site scraping** with Selenium + BeautifulSoup (dynamic pages fully rendered).
-* **Scheduled indexing** every six hours via APScheduler.
-* **PostgreSQL / SQLite storage** accessed through SQLAlchemy models.
-* **Full‑text search & rich filters** (region, city, category, keyword, sort).
-* **User accounts** powered by Flask‑Login and bcrypt password hashing.
-* **Bookmark system** – save jobs to a favourites list.
-* **Responsive UI** with dark‑mode toggle, real‑time preview panel and email copy helper.
-* **Containerised deployment** – one `docker compose up` launches web + db.
-* **Render.com ready** – configuration file provided for one‑click cloud deploy.
+• Multi‑site scraping with Selenium + BeautifulSoup (dynamic pages rendered in headless Chrome).
+• Six‑hourly scheduled indexing via APScheduler.
+• PostgreSQL (Render.com) or SQLite (local) storage accessed through SQLAlchemy models.
+• Full‑text search and rich filters for region, city, category, keyword and sort order.
+• User accounts protected by Flask‑Login and bcrypt.
+• One‑click bookmarks (favourites) with instant email copy.
+• Responsive UI with dark‑mode toggle and real‑time preview panel.
+• Containerised deployment – one `docker compose up` boots web + db.
+• Render.com configuration supplied for hassle‑free cloud deploy.
 
 ---
 
 ## Technology Stack
 
-* **Backend:** Python 3.11, Flask, SQLAlchemy, APScheduler
-* **Scraping:** Selenium (headless Chrome), BeautifulSoup 4
-* **Frontend:** HTML 5, Jinja2 templates, vanilla JavaScript, Font Awesome, CSS variables
-* **Database:** PostgreSQL in production, SQLite for local quick‑start
-* **Auth & Security:** Flask‑Login, bcrypt, CSRF protection via Flask‑WTF
-* **Containerisation:** Docker, Docker Compose, Gunicorn
+Backend: Python 3.11, Flask, SQLAlchemy, APScheduler
+Scraping: Selenium, BeautifulSoup 4
+Frontend: HTML 5, Jinja2, vanilla JavaScript, CSS variables, Font Awesome
+Database: PostgreSQL (prod) or SQLite (dev)
+Auth & Security: Flask‑Login, bcrypt, CSRF protection via Flask‑WTF
+Containerisation: Docker, Docker Compose, Gunicorn
 
 ---
 
-## Quick Start (Docker)
+## Quick Start with Docker
 
 ```bash
 git clone https://github.com/GiorgiBokuchava/ScrapeScout.git
 cd ScrapeScout
-cp .env.example .env            # edit values if desired
-docker compose up --build       # launches web (port 5000) and db (port 5432)
+cp .env.example .env        # adjust values if you like
+docker compose up --build   # launches web on :8000 and db on :5432
 ```
 
-Open [http://localhost:5000](http://localhost:5000) in your browser.
+Browse to [http://localhost:8000](http://localhost:8000).
 
 ### Required Environment Variables
 
-* `SECRET_KEY` – any random string for Flask sessions.
-* `DATABASE_URL` – connection string for Postgres (`postgresql://user:pass@db:5432/scrapescout`).
-* `SELENIUM_DRIVER` – path or command for headless Chrome (defaults work in the container).
+• `FLASK_APP` – entrypoint module (defaults to `run.py`).
+• `FLASK_DEBUG` – `1` for hot‑reload in development.
+• `DATABASE_URL` – Postgres or SQLite URI.
+• `SCRAPE_SCOUT_SECRET_KEY` – secret key for session & CSRF.
+• `PORT` – web server port (inside container).
 
-The provided **`.env.example`** lists sensible defaults for local development.
+An **`.env.example`** template is provided – copy it and fill any secrets.
 
 ---
 
@@ -55,58 +57,83 @@ The provided **`.env.example`** lists sensible defaults for local development.
 ```bash
 python -m venv env && source env/bin/activate
 pip install -r requirements.txt
-export SECRET_KEY="dev-secret"
+export FLASK_APP=run.py
+export FLASK_DEBUG=1
+export SCRAPE_SCOUT_SECRET_KEY="devsecret123"
 export DATABASE_URL="sqlite:///instance/scrape.db"
+export PORT=8000
 flask db upgrade
 python run.py
 ```
 
-The app starts on [http://localhost:5000](http://localhost:5000). Selenium requires a local Chrome/Chromium + chromedriver in `$PATH`.
+Open [http://localhost:8000](http://localhost:8000) in your browser. Selenium requires a local Chrome/Chromium and chromedriver in `$PATH`.
 
 ---
 
-## Project Layout (abridged)
+## .env.example
+
+```
+# Flask settings
+FLASK_APP=run.py
+FLASK_DEBUG=1
+PORT=8000
+
+# Database (choose one)
+# For local dev – uncomment below line to store data in an on‑disk SQLite file
+# DATABASE_URL=sqlite:///instance/scrape.db
+
+# For Docker Compose local Postgres
+# DATABASE_URL=postgresql://scrape:secret@db:5432/scrapedb
+
+# For Render.com cloud Postgres (uncomment when deploying)
+# DATABASE_URL=postgresql://scrape_scout_db_user:REPLACE_ME@dpg‑xxxx.frankfurt‑postgres.render.com/scrape_scout_db?sslmode=require
+
+# Secret key used for sessions and CSRF; change in production!
+SCRAPE_SCOUT_SECRET_KEY=devsecret123
+```
+
+---
+
+## Project Layout (overview)
 
 ```
 ScrapeScout/
-│  run.py                    # entrypoint
-│  docker-compose.yaml       # dev stack (web + db)
-│  Dockerfile                # builds the web image
-│  render.yaml               # Render.com service definition
-├─ application/
-│   ├─ models.py             # User, Job ORM models
-│   ├─ jobs_ge.py            # scraper for jobs.ge
-│   ├─ scrape.py             # indexing & query helpers
-│   ├─ routes.py             # Flask controllers
-│   ├─ forms.py              # WTForms classes
-│   └─ scheduler.py          # APScheduler setup
-├─ templates/                # Jinja2 HTML files
-├─ static/                   # JS, CSS, SVG assets
-├─ migrations/               # Alembic versions
-└─ README.md
+  run.py                # entrypoint
+  docker-compose.yaml   # dev stack (web + db)
+  Dockerfile            # builds web image
+  render.yaml           # Render.com service definition
+  .env.example          # sample configuration
+  application/
+    models.py           # User, Job ORM models
+    jobs_ge.py          # scraper for jobs.ge
+    scrape.py           # indexing & query helpers
+    routes.py           # Flask controllers
+    forms.py            # WTForms classes
+    scheduler.py        # APScheduler setup
+  templates/            # Jinja2 HTML files
+  static/               # JS, CSS, SVG assets
+  migrations/           # Alembic versions
 ```
 
 ---
 
 ## Contributing
 
-1. Fork the repo and create a new branch (e.g. `feature/new-board`).
-2. Commit your changes with clear messages.
-3. Push and open a Pull Request describing the enhancement.
-
-Please run `black` for formatting and ensure `pytest` passes before submitting.
+1. Fork the repository and create a feature branch.
+2. Commit changes using conventional commit messages.
+3. Run `black` for formatting and ensure tests pass.
+4. Open a Pull Request describing the enhancement.
 
 ---
 
 ## License
 
-This project is released under the **MIT License**. See `LICENSE` for full text.
+Released under the **MIT License**. See `LICENSE` for full text.
 
 ---
 
 ## Contact
 
-* GitHub: [https://github.com/GiorgiBokuchava](https://github.com/GiorgiBokuchava)
-* Email: listed in GitHub profile
+GitHub: [https://github.com/GiorgiBokuchava](https://github.com/GiorgiBokuchava)
 
 Happy scraping! 🚀
