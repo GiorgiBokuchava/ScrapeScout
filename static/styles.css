@@ -33,6 +33,8 @@
     --flash-light-border: #7e7e7e;
     --flash-dark: #D3D3D4;
     --flash-dark-border: #5d5d5d;
+    --button-color: #9198a1;
+    --button-background-color: #636c764a;
 }
 
 [data-theme="dark"] {
@@ -81,12 +83,16 @@ body {
 }
 
 .nav-container {
+    position: fixed;
     position: sticky;
     top: 0;
     width: 100%;
     z-index: 1000;
     background-color: var(--color-nav);
     box-shadow: 0px 2px 10px var(--color-box-shadow);
+    transition: top 0.3s ease;
+    /* Add height property so we can reference it in JS */
+    height: auto;
 }
 
 .navbar {
@@ -307,6 +313,8 @@ body {
 main {
     display: flex;
     flex: 1 0 auto;
+    /* margin-top: 60px; */
+    /* min-height: calc(100vh - 60px); */
 }
 
 .form-container {
@@ -632,4 +640,401 @@ input:-webkit-autofill:active {
     .submit-button {
         font-size: 1rem;
     }
+}
+
+/* Jobs page styles */
+.jobs-container {
+    padding: 1rem;
+    width: 100%;
+    max-width: 1400px;
+    margin: 2rem auto;
+    padding: 1.5rem;
+}
+
+#job-form {
+    margin-bottom: 1rem;
+}
+
+.job-filters-group {
+    display: flex;
+    gap: 1.2rem;
+    flex-wrap: wrap;
+    margin-bottom: 2rem;
+    background-color: var(--color-surface);
+    padding: 1.5rem;
+    border-radius: 8px;
+    border: 1px solid var(--color-surface-border);
+}
+
+.filter-item {
+    flex: 1;
+    min-width: 200px;
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+}
+
+.filter-item:last-child {
+    flex: 0;
+    min-width: auto;
+    align-self: flex-end;
+    margin-left: auto;
+}
+
+.search-box {
+    flex: 2;
+}
+
+.filter-item label {
+    font-size: 0.9rem;
+    font-weight: 500;
+    color: var(--color-text-secondary);
+}
+
+.filter-select,
+.search-input {
+    padding: 0.7rem 1rem;
+    border: 1px solid var(--color-surface-border);
+    border-radius: 6px;
+    background-color: var(--color-background);
+    color: var(--color-text-primary);
+    font-size: 0.95rem;
+    transition: all 0.2s ease;
+}
+
+.filter-select:hover,
+.search-input:hover {
+    border-color: var(--color-primary);
+}
+
+.filter-select:focus,
+.search-input:focus {
+    border-color: var(--color-primary);
+    outline: none;
+    box-shadow: 0 0 0 2px var(--color-primary-light);
+}
+
+.search-btn {
+    height: 42px;
+    padding: 0 1.5rem;
+    background-color: var(--color-primary);
+    color: white;
+    border: none;
+    border-radius: 6px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    width: fit-content;
+}
+
+.search-btn:hover {
+    background-color: var(--color-primary-dark);
+    transform: translateY(-1px);
+}
+
+.search-btn:active {
+    transform: translateY(0);
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .job-filters-group {
+        padding: 1rem;
+        gap: 1rem;
+    }
+
+    .filter-item {
+        min-width: 100%;
+    }
+
+    .filter-item:last-child {
+        margin-left: 0;
+        width: 100%;
+    }
+
+    .search-btn {
+        width: 100%;
+        justify-content: center;
+    }
+}
+
+.job-listing {
+    background-color: var(--color-surface);
+    border-radius: 8px;
+    padding: 1rem 0;
+    /* Reduced padding */
+}
+
+.job-item {
+    padding: 1rem;
+    border: 1px solid var(--color-surface-border);
+    border-radius: 6px;
+    margin-bottom: 0.8rem;
+    background-color: var(--color-background);
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.job-item:hover {
+    transform: translateX(4px);
+    border-color: var(--color-primary);
+}
+
+.job-item.selected {
+    border-color: var(--color-primary);
+    background-color: var(--color-nav);
+}
+
+.job-item h3 {
+    font-size: 1.1rem;
+    margin-bottom: 0.5rem;
+    color: var(--color-text-primary);
+}
+
+.job-item-details {
+    display: flex;
+    gap: 1rem;
+    font-size: 0.9rem;
+    color: var(--color-text-secondary);
+    flex-wrap: wrap;
+}
+
+.job-item-detail {
+    display: flex;
+    align-items: center;
+    gap: 0.3rem;
+}
+
+.job-preview {
+    position: fixed;
+    top: 0;
+    right: -50%;
+    width: 50%;
+    height: 100vh;
+    background-color: var(--color-surface);
+    border-left: 1px solid var(--color-surface-border);
+    padding: 1.5rem;
+    overflow-y: auto;
+    transition: right 0.3s ease-in-out;
+    box-shadow: -5px 0 15px rgba(0, 0, 0, 0.1);
+    z-index: 1000;
+}
+
+.job-preview.show {
+    right: 0;
+}
+
+.preview-header {
+    position: absolute;
+    top: 1rem;
+    left: 1rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 1.5rem;
+    padding: 0 0.75rem;
+}
+
+.close-preview {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background: transparent;
+    border: none;
+    border-radius: 7px;
+    color: var(--button-color);
+    cursor: pointer;
+    width: 2rem;
+    padding: 0.5rem;
+    font-size: 1.2rem;
+    height: 2rem;
+    transition: color 0.2s;
+}
+
+.close-preview>i {
+    font-size: 1.2rem;
+}
+
+.close-preview:hover {
+    /* color: var(--color-text-primary); */
+    background-color: var(--button-background-color);
+}
+
+.preview-content {
+    color: var(--color-text-primary);
+}
+
+.preview-content h1 {
+    font-size: 1.6rem;
+    margin-bottom: 1rem;
+}
+
+.preview-content .company {
+    font-size: 1.1rem;
+    color: var(--color-text-secondary);
+    margin-bottom: 1.5rem;
+}
+
+.preview-content .metadata {
+    display: flex;
+    gap: 1rem;
+    flex-wrap: wrap;
+    margin-bottom: 2rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid var(--color-surface-border);
+}
+
+.preview-content .metadata-item {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    color: var(--color-text-secondary);
+    font-size: 0.9rem;
+}
+
+.preview-content .actions {
+    display: flex;
+    gap: 1rem;
+    /* margin-bottom: 2rem; */
+    flex-wrap: wrap;
+}
+
+.preview-content .action-btn {
+    padding: 0.6rem 1.2rem;
+    border-radius: 6px;
+    font-weight: 500;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.preview-content .primary-btn {
+    background-color: var(--color-primary);
+    color: white;
+    border: none;
+}
+
+.preview-content .secondary-btn {
+    background-color: transparent;
+    color: var(--color-text-primary);
+    border: 1px solid var(--color-surface-border);
+}
+
+.preview-content .action-btn:hover {
+    opacity: 0.9;
+}
+
+.preview-content .description {
+    white-space: pre-wrap;
+}
+
+/* Mobile responsive styles */
+@media (max-width: 768px) {
+    .job-preview {
+        width: 100%;
+        right: -100%;
+    }
+
+    .filter-item {
+        min-width: 100%;
+    }
+}
+
+/* Tint overlay effect */
+.content-overlay {
+    position: fixed;
+    top: 0;
+    right: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.4);
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.3s ease-in-out;
+    z-index: 999;
+}
+
+.content-overlay.show {
+    opacity: 1;
+    visibility: visible;
+}
+
+/* Skeleton loading effect */
+.skeleton-loading {
+    padding: 1rem;
+}
+
+.skeleton-text {
+    width: 100%;
+    height: 0.7rem;
+    margin-bottom: 0.5rem;
+    border-radius: 0.25rem;
+    background-color: var(--color-surface-border);
+    animation: skeleton-loading 1s linear infinite alternate;
+}
+
+.skeleton-text.large {
+    width: 85%;
+    height: 1.2rem;
+    margin-bottom: 1rem;
+}
+
+@keyframes skeleton-loading {
+    0% {
+        background-color: var(--color-surface-border);
+    }
+
+    100% {
+        background-color: var(--color-nav);
+    }
+}
+
+/* Filters summary and filter tags */
+.filters-summary {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin: 1rem 0;
+    color: var(--color-text-secondary);
+    font-size: 0.9rem;
+}
+
+.results-count {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.active-filters {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
+.filter-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.3rem 0.8rem;
+    background-color: var(--color-surface);
+    border: 1px solid var(--color-surface-border);
+    border-radius: 20px;
+    font-size: 0.85rem;
+    color: var(--color-text-secondary);
+}
+
+.filters-left {
+    display: flex;
+    flex: 1;
+    gap: 1.2rem;
+    flex-wrap: wrap;
+}
+
+.filters-right {
+    display: flex;
+    align-items: flex-end;
 }

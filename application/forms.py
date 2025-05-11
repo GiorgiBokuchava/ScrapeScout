@@ -54,8 +54,18 @@ class JobSearchForm(FlaskForm):
     GROUP_CHOICES = [("ALL", "All Groups")] + [(g, g) for g in groups()]
     CATEGORY_CHOICES = [(cat.key, cat.display) for cat in categories()]
 
+    SORT_CHOICES = [
+        ("date_posted_desc", "Date (Newest First)"),
+        ("date_posted_asc", "Date (Oldest First)"),
+        ("title_asc", "Title (A-Z)"),
+        ("title_desc", "Title (Z-A)"),
+        ("company_asc", "Company (A-Z)"),
+        ("company_desc", "Company (Z-A)"),
+    ]
+
     regions = SelectField("Region", choices=REGION_CHOICES, default="ALL")
     cities = SelectField("City", choices=CITY_CHOICES, default="ALL")
     groups = SelectField("Group", choices=GROUP_CHOICES, default="ALL")
     categories = SelectField("Category", choices=CATEGORY_CHOICES, default="ALL")
+    sort_by = SelectField("Sort By", choices=SORT_CHOICES, default="date_posted_desc")
     keyword = StringField("Keyword")

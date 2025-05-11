@@ -8,6 +8,8 @@ from application.jobs_ge import scrape_jobs_ge
 from application.location import LOCATIONS, LOC_BY_KEY
 from application.category import CATEGORIES, CAT_BY_KEY
 
+from application import jobs_ge
+
 
 def _scrape_locations() -> dict[str, Job]:
     results, total = {}, 0
@@ -83,7 +85,12 @@ def index_all_jobs() -> None:
         current_app.logger.info("No new jobs to commit")
 
 
-def get_jobs(searched_location: str, searched_category: str, searched_keyword: str):
+def get_jobs(
+    searched_location: str,
+    searched_category: str,
+    searched_keyword: str,
+    sort_by: str = "date_posted_desc",
+):
     """Filter jobs in the DB by location, category and/or free-text keyword."""
     query = db.session.query(Job)
 
@@ -104,6 +111,12 @@ def get_jobs(searched_location: str, searched_category: str, searched_keyword: s
     if searched_keyword:
         kw = f"%{searched_keyword}%"
         query = query.filter(Job.title.ilike(kw) | Job.description.ilike(kw))
+
+    # Apply sorting
+    if sort_by:
+        field, direction = sort_by.rsplit("_", 1)
+        order = db.desc(field) if direction == "desc" else db.asc(field)
+        query = query.order_by(order)
 
     try:
         return query.all()

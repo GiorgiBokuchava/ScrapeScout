@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% block title %}My Favorites | ScrapeScout{% endblock %}
+
+{% block content %}
+<div class="jobs-container">
+    <h1>My Saved Jobs</h1>
+    <div id="results-container">
+        {% for job in jobs %}
+        <div class="job-item" data-url="{{ job.url }}" data-description="{{ job.description }}"
+            data-email="{{- job.email -}}">
+            <h3>{{ job.title }}</h3>
+            <div class="job-item-details">
+                <span class="job-item-detail">
+                    <i class="fa fa-building"></i>
+                    {{ job.company }}
+                </span>
+                <span class="job-item-detail">
+                    <i class="fa fa-map-marker"></i>
+                    {{ job.location }}
+                </span>
+                <span class="job-item-detail">
+                    <i class="fa fa-calendar"></i>
+                    {{ job.date_posted }}
+                </span>
+            </div>
+        </div>
+        {% else %}
+        <p>You haven't saved any jobs yet.</p>
+        {% endfor %}
+    </div>
+
+    <!-- Job preview panel -->
+    <div class="job-preview" id="preview-panel">
+        <div class="preview-header">
+            <button class="close-preview">
+                <i class="fa fa-times"></i>
+            </button>
+        </div>
+        <div class="preview-content">
+            <!-- Content will be dynamically inserted here -->
+        </div>
+    </div>
+</div>
+{% endblock %}

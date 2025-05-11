@@ -4,38 +4,65 @@
 
 {% block content %}
 <div class="jobs-container">
-
     <!-- The search form -->
-    <div class="job-filters">
-        <form id="job-form" method="POST" action="/jobs">
-            {{ form.hidden_tag() }}
-            <div class="job-filters-group">
-                <div class="location_filter">
+    <form id="job-form" method="POST" action="/jobs">
+        {{ form.hidden_tag() }}
+        <div class="job-filters-group">
+            <div class="filters-left">
+                <div class="filter-item">
                     <label for="regions">{{ form.regions.label }}</label>
-                    {{ form.regions() }}
+                    {{ form.regions(class="filter-select") }}
                 </div>
-                <div class="category_filter">
+                <div class="filter-item">
                     <label for="categories">{{ form.categories.label }}</label>
-                    {{ form.categories() }}
+                    {{ form.categories(class="filter-select") }}
                 </div>
-                <div class="keyword_filter">
+                <div class="filter-item search-box">
                     <label for="keyword">{{ form.keyword.label }}</label>
-                    {{ form.keyword() }}
+                    {{ form.keyword(class="search-input", placeholder="Search jobs...") }}
                 </div>
-                <button type="submit">Search</button>
+                <div class="filter-item">
+                    <label for="sort_by">{{ form.sort_by.label }}</label>
+                    {{ form.sort_by(class="filter-select") }}
+                </div>
             </div>
-        </form>
+            <div class="filters-right">
+                <div class="filter-item">
+                    <button type="submit" class="search-btn">
+                        <i class="fa fa-search"></i>
+                        Search
+                    </button>
+                </div>
+            </div>
+        </div>
+    </form>
+
+    <!-- Filters summary -->
+    <div class="filters-summary">
+        <div class="results-count" id="results-count"></div>
+        <div class="active-filters" id="active-filters"></div>
     </div>
 
     <!-- Loading indicator -->
-    <div id="loading" style="display: none; margin-top:10px;">
+    <div id="loading" style="display: none;">
         <div class="loader"></div>
     </div>
 
     <!-- Results container -->
-    <div class="job-listing" id="results-container" style="margin-top:10px;">
+    <div id="results-container">
         <!-- Results will be dynamically inserted here -->
     </div>
 
+    <!-- Job preview panel -->
+    <div class="job-preview" id="preview-panel">
+        <div class="preview-header">
+            <button class="close-preview">
+                <i class="fa-light fa-xmark"></i>
+            </button>
+        </div>
+        <div class="preview-content">
+            <!-- Content will be dynamically inserted here -->
+        </div>
+    </div>
 </div>
 {% endblock %}

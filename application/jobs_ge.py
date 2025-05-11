@@ -8,7 +8,7 @@ from selenium.webdriver.chrome.options import Options
 import time
 
 # ← new imports
-from application.location import loc_to_site_code, site_code_to_loc
+from application.location import loc_to_site_code, site_code_to_loc, LOC_BY_KEY
 from application.category import cat_to_site_code, site_code_to_cat
 
 job_keyword = ""  # &q=KEYWORD
@@ -39,6 +39,23 @@ def get_fully_loaded_html(url: str) -> str:
     html = driver.page_source
     driver.quit()
     return html
+
+
+def extractDescription(job_URL):
+    job_page = requests.get(job_URL)
+    job_soup = BeautifulSoup(job_page.text, "html.parser")
+    description = job_soup.find(
+        "td", attrs={"style": "padding-top:30px; padding-bottom:40px;"}
+    )
+    return description if description else "N/A"
+
+
+def extractEmail(description):
+    email = ""
+    found = re.search(r"[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}", description)
+    if found:
+        email = found.group(0).strip()
+    return email if email else "N/A"
 
 
 def scrape_jobs_ge(
@@ -109,20 +126,28 @@ def scrape_jobs_ge(
             if site_category_id:
                 cat_obj = site_code_to_cat(site, site_category_id)
 
-            # Create job with proper location/category info
+            # Create job with proper location/category info and default description/email
             new_job = Job(
                 title=title,
                 company=company,
                 url=job_url,
                 date_posted=posted,
                 salary="N/A",
-                email="N/A",
+                email="...",
                 favorite=False,
                 location_key=chosen_job_location,
                 category_key=chosen_job_category,
-                location=loc_obj.display if loc_obj else "All Locations",
+                location=(
+                    loc_obj.display
+                    if loc_obj
+                    else (
+                        LOC_BY_KEY[chosen_job_location].display
+                        if chosen_job_location != "ALL"
+                        else "All Locations"
+                    )
+                ),
                 category=cat_obj.display if cat_obj else "All Categories",
-                description="...",  # This will be filled in later if needed
+                description="...",
             )
             jobs.append(new_job)
         except Exception as e:
