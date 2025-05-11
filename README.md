@@ -7,13 +7,21 @@ ScrapeScout is a Flask‑based job aggregation platform that collects vacancies 
 ## Key Features
 
 • Multi‑site scraping with Selenium + BeautifulSoup (dynamic pages rendered in headless Chrome).
+
 • Six‑hourly scheduled indexing via APScheduler.
+
 • PostgreSQL (Render.com) or SQLite (local) storage accessed through SQLAlchemy models.
+
 • Full‑text search and rich filters for region, city, category, keyword and sort order.
+
 • User accounts protected by Flask‑Login and bcrypt.
+
 • One‑click bookmarks (favourites) with instant email copy.
+
 • Responsive UI with dark‑mode toggle and real‑time preview panel.
+
 • Containerised deployment – one `docker compose up` boots web + db.
+
 • Render.com configuration supplied for hassle‑free cloud deploy.
 
 ---
