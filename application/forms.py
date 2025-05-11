@@ -2,7 +2,9 @@ from flask_wtf import FlaskForm
 from wtforms import StringField, PasswordField, SubmitField, BooleanField, SelectField
 from wtforms.validators import DataRequired, Length, EqualTo, Email, ValidationError
 from application.models import User
-from application.search_options import MASTER_CONFIG
+
+from application.location import regions, cities_of
+from application.category import groups, categories, cats_of
 
 
 class RegisterForm(FlaskForm):
@@ -42,18 +44,18 @@ class LoginForm(FlaskForm):
 
 
 class JobSearchForm(FlaskForm):
-    locations = SelectField(
-        label="Job Location",
-        choices=[(key, value) for key, value in MASTER_CONFIG["locations"].items()],
-        validators=[DataRequired()],
-        default="ALL",
-    )
+    # Build region list once
+    REGION_CHOICES = [(reg.key, reg.display) for reg in regions()]
 
-    categories = SelectField(
-        label="Job Category",
-        choices=[(key, value) for key, value in MASTER_CONFIG["categories"].items()],
-        validators=[DataRequired()],
-        default="ALL",
-    )
+    # City dropdown will be populated in the view via `cities_of(...)`
+    # – leave it empty here or fill with “All cities”.
+    CITY_CHOICES = [("ALL", "All Cities")]
 
-    keyword = StringField(label="Search by keyword")
+    GROUP_CHOICES = [("ALL", "All Groups")] + [(g, g) for g in groups()]
+    CATEGORY_CHOICES = [(cat.key, cat.display) for cat in categories()]
+
+    regions = SelectField("Region", choices=REGION_CHOICES, default="ALL")
+    cities = SelectField("City", choices=CITY_CHOICES, default="ALL")
+    groups = SelectField("Group", choices=GROUP_CHOICES, default="ALL")
+    categories = SelectField("Category", choices=CATEGORY_CHOICES, default="ALL")
+    keyword = StringField("Keyword")

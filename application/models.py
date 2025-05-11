@@ -34,8 +34,12 @@ class User(db.Model, UserMixin):
 class Job(db.Model):
     id = db.Column(db.Integer, primary_key=True, unique=True, nullable=False)
     title = db.Column(db.String(100), nullable=False, default="N/A")
+
     location = db.Column(db.String(100), nullable=False, default="N/A")
     category = db.Column(db.String(100), nullable=False, default="N/A")
+    location_key = db.Column(db.String(50), nullable=False, index=True, default="ALL")
+    category_key = db.Column(db.String(50), nullable=False, index=True, default="ALL")
+
     company = db.Column(db.String(100), nullable=False, default="N/A")
     description = db.Column(db.Text, nullable=False, default="N/A")
     url = db.Column(db.String(200), nullable=False, default="N/A")

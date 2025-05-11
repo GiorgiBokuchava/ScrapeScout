@@ -3,34 +3,15 @@ import requests
 import re
 from application import db
 from application.models import Job
-from application.search_options import (
-    get_master_to_site_mapping,
-    get_site_to_master_mapping,
-    MASTER_CONFIG,
-)
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
 import time
 
+# ← new imports
+from application.location import loc_to_site_code, site_code_to_loc
+from application.category import cat_to_site_code, site_code_to_cat
 
 job_keyword = ""  # &q=KEYWORD
-
-
-def extractDescription(job_URL):
-    job_page = requests.get(job_URL)
-    job_soup = BeautifulSoup(job_page.text, "html.parser")
-    description = job_soup.find(
-        "td", attrs={"style": "padding-top:30px; padding-bottom:40px;"}
-    )
-    return description if description else "N/A"
-
-
-def extractEmail(description):
-    email = ""
-    found = re.search(r"[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}", description)
-    if found:
-        email = found.group(0)
-    return email if email else "N/A"
 
 
 def build_driver() -> webdriver.Chrome:
@@ -38,129 +19,117 @@ def build_driver() -> webdriver.Chrome:
     chrome_opts.add_argument("--headless=new")
     chrome_opts.add_argument("--no-sandbox")
     chrome_opts.add_argument("--disable-dev-shm-usage")
-
     return webdriver.Chrome(options=chrome_opts)
 
 
-# Get html content of the page using Selenium (because of infinite loading)
-def get_fully_loaded_html(url):
+def get_fully_loaded_html(url: str) -> str:
     driver = build_driver()
     driver.get(url)
+    time.sleep(1)
 
-    TIME_TO_WAIT = 3  # seconds
-
-    last_height = driver.execute_script("return document.body.scrollHeight")
-
+    last_h = driver.execute_script("return document.body.scrollHeight")
     while True:
         driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
-        time.sleep(TIME_TO_WAIT)
-        new_height = driver.execute_script("return document.body.scrollHeight")
-        if new_height == last_height:
+        time.sleep(2)
+        new_h = driver.execute_script("return document.body.scrollHeight")
+        if new_h == last_h:
             break
-        last_height = new_height
+        last_h = new_h
 
-    html_content = driver.page_source
+    html = driver.page_source
     driver.quit()
-    return html_content
+    return html
 
 
-def scrape_jobs_ge(chosen_job_location, chosen_job_category, chosen_job_keyword):
+def scrape_jobs_ge(
+    chosen_job_location: str, chosen_job_category: str, chosen_job_keyword: str
+) -> list[Job]:
     """
-    This function scrapes jobs.ge for the given location, category, and keyword.
-    It returns a list of Job objects.
+    chosen_job_location / chosen_job_category are canonical keys:
+      e.g. "TBILISI", "SALES", or "ALL"
     """
-    # Get the site-specific values directly since we're receiving numeric IDs
-    # No need to map - the incoming values are already in site-specific format
-    site_location = chosen_job_location if chosen_job_location != "ALL" else ""
-    site_category = chosen_job_category if chosen_job_category != "ALL" else ""
+    site = "jobs_ge"
+    # Get both ids properly or defaults
+    site_location_id = (
+        ""
+        if chosen_job_location == "ALL"
+        else loc_to_site_code(site, chosen_job_location)
+    )
+    site_category_id = (
+        ""
+        if chosen_job_category == "ALL"
+        else cat_to_site_code(site, chosen_job_category)
+    )
 
-    # Construct the URL with the site-specific values
+    # Verify we got valid IDs if not "ALL"
+    if chosen_job_location != "ALL" and site_location_id is None:
+        print(f"Warning: Invalid location key {chosen_job_location}")
+        site_location_id = ""
+    if chosen_job_category != "ALL" and site_category_id is None:
+        print(f"Warning: Invalid category key {chosen_job_category}")
+        site_category_id = ""
+
+    # Build URL with validated IDs
     url = f"https://jobs.ge/?page=1&q={chosen_job_keyword}"
-    if site_category:
-        url += f"&cid={site_category}"
-    if site_location:
-        url += f"&lid={site_location}&jid="
+    if site_category_id not in (None, ""):
+        url += f"&cid={site_category_id}"
+    if site_location_id not in (None, ""):
+        url += f"&lid={site_location_id}&jid="
 
-    ###############################
-    # Scrape the website
+    print(f"Scraping URL: {url}")  # Debug log
 
-    ##### TO RUN ON SERVER
-    html_content = get_fully_loaded_html(url)
-    soup = BeautifulSoup(html_content, "html.parser")
+    html = get_fully_loaded_html(url)
+    soup = BeautifulSoup(html, "html.parser")
 
-    jobs_ge_list = []
-
-    # Jobs
-    tr_elements = soup.find_all("tr")
-
-    # Get the site_to_master mappings to convert numeric IDs to master config values
-    site_to_master_locations = get_site_to_master_mapping("jobs_ge", "locations")
-    site_to_master_categories = get_site_to_master_mapping("jobs_ge", "categories")
-
-    for tr in tr_elements:
+    jobs: list[Job] = []
+    for tr in soup.find_all("tr"):
         tds = tr.find_all("td")
-
-        if len(tds) >= 4:
-            try:
-                job_title = tds[1].find("a").text.strip()
-
-                # Look up the master config values using the site-specific mapping
-                location = site_to_master_locations.get(
-                    site_location, "Unknown Location"
-                )
-                category = site_to_master_categories.get(
-                    site_category, "Unknown Category"
-                )
-
-                company_name = tds[3].text.strip()
-                skip_words = ["ყველა", "ვაკანსია", "ერთ", "გვერდზე"]
-                if any(word in company_name for word in skip_words):
-                    continue
-
-                job_URL = ("https://www.jobs.ge" + tds[1].find("a")["href"]).strip()
-
-                job_description_text = "..."
-
-                posted_time = tds[4].text.strip()
-                skip_words = ["ყველა", "ვაკანსია", "ერთ", "გვერდზე"]
-                if any(word in posted_time for word in skip_words):
-                    continue
-
-                salary = "N/A"
-
-                email = ""
-
-                favorite = False
-
-                new_job = Job(
-                    title=job_title,
-                    location=location,
-                    category=category,
-                    company=company_name,
-                    description=job_description_text,
-                    url=job_URL,
-                    date_posted=posted_time,
-                    salary=salary,
-                    email=email,
-                    favorite=favorite,
-                )
-
-                jobs_ge_list.append(new_job)
-                # print(f"Job added: {job_title} - {company_name}")
-
-            except Exception as e:
-                print(f"Error: {e}")
+        if len(tds) < 4:
+            continue
+        try:
+            title = tds[1].find("a").text.strip()
+            company = tds[3].text.strip()
+            # skip ads / pagination rows
+            if any(w in company for w in ["ყველა", "ვაკანსია"]):
                 continue
 
-    return jobs_ge_list
+            href = tds[1].find("a")["href"]
+            job_url = "https://www.jobs.ge" + href
 
+            posted = tds[4].text.strip()
+            if any(w in posted for w in ["ყველა", "ვაკანსია"]):
+                continue
 
-"""
-# Example usage
-location_choice = "Tbilisi"     # or user input
-category_choice = "Sales"       # or user input
-keyword_choice = ""             # or user input
+            # Look up display names and ensure we have valid objects
+            loc_obj = None
+            cat_obj = None
 
-results = scrape_jobs(location_choice, category_choice, keyword_choice)
-print(f"Found {len(results)} job(s).")
-"""
+            if site_location_id:
+                loc_obj = site_code_to_loc(site, site_location_id)
+            if site_category_id:
+                cat_obj = site_code_to_cat(site, site_category_id)
+
+            # Create job with proper location/category info
+            new_job = Job(
+                title=title,
+                company=company,
+                url=job_url,
+                date_posted=posted,
+                salary="N/A",
+                email="N/A",
+                favorite=False,
+                location_key=chosen_job_location,
+                category_key=chosen_job_category,
+                location=loc_obj.display if loc_obj else "All Locations",
+                category=cat_obj.display if cat_obj else "All Categories",
+                description="...",  # This will be filled in later if needed
+            )
+            jobs.append(new_job)
+        except Exception as e:
+            print("scrape error:", e)
+            continue
+
+    print(
+        f"Found {len(jobs)} jobs for location: {chosen_job_location}, category: {chosen_job_category}"
+    )
+    return jobs

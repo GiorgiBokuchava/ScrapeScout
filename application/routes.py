@@ -66,12 +66,21 @@ def logout():
 @app.route("/jobs", methods=["GET", "POST"])
 def jobs():
     form = JobSearchForm()
+    from application.location import regions, LOC_BY_KEY
+    from application.category import CATEGORIES, CAT_BY_KEY
+
+    # form.regions.choices = [("ALL", "All Locations")] + [
+    #     (loc.key, loc.display) for loc in regions()
+    # ]
+    # form.categories.choices = [("ALL", "All Categories")] + [
+    #     (cat.key, cat.display) for cat in CATEGORIES
+    # ]
 
     if request.method == "GET":
         return render_template("jobs.html", form=form)
 
     if form.validate_on_submit():
-        job_location = form.locations.data
+        job_location = form.regions.data
         job_category = form.categories.data
         job_keyword = form.keyword.data
 
@@ -81,7 +90,6 @@ def jobs():
             searched_keyword=job_keyword,
         )
 
-        # Convert each Job object into a dictionary and add new Job objects to the database
         jobs_data = []
         for job in jobs_list:
             jobs_data.append(
@@ -91,9 +99,13 @@ def jobs():
                     "url": job.url,
                     "date_posted": job.date_posted,
                     "description": job.description,
+                    "location_key": job.location_key,
+                    "location": LOC_BY_KEY[job.location_key].display,
+                    "category_key": job.category_key,
+                    "category": CAT_BY_KEY[job.category_key].display,
                 }
             )
 
         return jsonify({"jobs": jobs_data})
-    else:
-        return jsonify({"jobs": [], "error": form.errors}), 400
+
+    return jsonify({"jobs": [], "error": form.errors}), 400

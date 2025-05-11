@@ -3,52 +3,34 @@ from sqlalchemy.exc import OperationalError
 
 from application import db
 from application.models import Job
+
 from application.jobs_ge import scrape_jobs_ge
-from application.search_options import MASTER_CONFIG, search_config
+from application.location import LOCATIONS, LOC_BY_KEY
+from application.category import CATEGORIES, CAT_BY_KEY
 
 
 def _scrape_locations() -> dict[str, Job]:
-    # Scrape every configured location once and return {url: Job}.
-    results: dict[str, Job] = {}
-    total = 0
-
-    for loc_key, loc_val in search_config["jobs_ge"]["locations"].items():
-        if not loc_key:  # empty key means “ALL”; we skip it
+    results, total = {}, 0
+    for loc in LOCATIONS:
+        if loc.key in ("", "ALL"):  # skip “All Locations”
             continue
-
-        current_app.logger.info("Scraping jobs.ge for location: %s", loc_val)
-        site_list = scrape_jobs_ge(loc_key, "", "")  # (location, category, kw)
+        current_app.logger.info("Scraping by location: %s", loc.display)
+        site_list = scrape_jobs_ge(loc.key, "ALL", "")
         total += len(site_list)
-        for job in site_list:
-            results[job.url] = job
-
-        current_app.logger.info(
-            "Scraped %d jobs for location: %s", len(site_list), loc_val
-        )
-
+        results.update({j.url: j for j in site_list})
     current_app.logger.info("Scraped %d jobs across all locations", total)
     return results
 
 
 def _scrape_categories() -> dict[str, Job]:
-    # Scrape every configured category once and return {url: Job}.
-    results: dict[str, Job] = {}
-    total = 0
-
-    for cat_key, cat_val in search_config["jobs_ge"]["categories"].items():
-        if not cat_key:
+    results, total = {}, 0
+    for cat in CATEGORIES:
+        if cat.key in ("", "ALL"):
             continue
-
-        current_app.logger.info("Scraping jobs.ge for category: %s", cat_val)
-        site_list = scrape_jobs_ge("", cat_key, "")
+        current_app.logger.info("Scraping by category: %s", cat.display)
+        site_list = scrape_jobs_ge("ALL", cat.key, "")
         total += len(site_list)
-        for job in site_list:
-            results[job.url] = job
-
-        current_app.logger.info(
-            "Scraped %d jobs for category: %s", len(site_list), cat_val
-        )
-
+        results.update({j.url: j for j in site_list})
     current_app.logger.info("Scraped %d jobs across all categories", total)
     return results
 
@@ -102,19 +84,22 @@ def index_all_jobs() -> None:
 
 
 def get_jobs(searched_location: str, searched_category: str, searched_keyword: str):
-    # Filter jobs in the DB by location, category and/or free-text keyword.
-
+    """Filter jobs in the DB by location, category and/or free-text keyword."""
     query = db.session.query(Job)
 
     if searched_location != "ALL":
-        loc_display = MASTER_CONFIG["locations"].get(searched_location)
-        if loc_display:
-            query = query.filter(Job.location == loc_display)
+        # Filter by location key and handle legacy data
+        query = query.filter(
+            (Job.location_key == searched_location)
+            | (Job.location == LOC_BY_KEY[searched_location].display)
+        )
 
     if searched_category != "ALL":
-        cat_display = MASTER_CONFIG["categories"].get(searched_category)
-        if cat_display:
-            query = query.filter(Job.category == cat_display)
+        # Filter by category key and handle legacy data
+        query = query.filter(
+            (Job.category_key == searched_category)
+            | (Job.category == CAT_BY_KEY[searched_category].display)
+        )
 
     if searched_keyword:
         kw = f"%{searched_keyword}%"
