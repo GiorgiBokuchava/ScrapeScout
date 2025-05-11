@@ -1,6 +1,3 @@
-Here's a draft for your README.md file for the `ScrapeScout_Prototype` repository:
-
-```markdown
 # ScrapeScout Prototype
 
 ScrapeScout Prototype is a web scraping tool designed to efficiently scrape, parse, and display data from various web sources. Built with a mix of modern web technologies and Python, this project serves as a foundation for developing scalable web scraping solutions.
@@ -112,6 +109,3 @@ For any questions or feedback, feel free to contact the repository owner:
 ---
 
 Thank you for using ScrapeScout Prototype! 🚀
-```
-
-You can now copy and paste this into the `README.md` file of your repository. Let me know if you want to add any additional details!
