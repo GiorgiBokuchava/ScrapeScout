@@ -717,7 +717,7 @@ input:-webkit-autofill:active {
 .search-btn {
     height: 42px;
     padding: 0 1.5rem;
-    background-color: var(--color-primary);
+    background-color: var(--color-primary-dark);
     color: white;
     border: none;
     border-radius: 6px;
@@ -830,7 +830,7 @@ input:-webkit-autofill:active {
 .preview-header {
     position: absolute;
     top: 1rem;
-    left: 1rem;
+    right: 1rem;
     display: flex;
     justify-content: space-between;
     align-items: flex-start;
@@ -880,7 +880,7 @@ input:-webkit-autofill:active {
 
 .preview-content .metadata {
     display: flex;
-    gap: 1rem;
+    gap: 2rem;
     flex-wrap: wrap;
     margin-bottom: 2rem;
     padding-bottom: 1rem;
@@ -893,6 +893,61 @@ input:-webkit-autofill:active {
     gap: 0.4rem;
     color: var(--color-text-secondary);
     font-size: 0.9rem;
+}
+
+.preview-content .metadata-item i {
+    color: var(--color-primary);
+    font-size: 1rem;
+}
+
+.preview-content .email-item {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    width: fit-content;
+    margin: 1rem 0;
+    padding: 0.8rem;
+    background-color: var(--color-nav);
+    border-radius: 6px;
+    border: 1px solid var(--color-surface-border);
+    cursor: pointer;
+    transition: all 0.2s ease;
+    user-select: none;
+}
+
+.preview-content .email-item:hover {
+    background-color: var(--color-surface);
+    border-color: var(--color-primary);
+}
+
+.preview-content .email-item i.fa-envelope {
+    color: var(--color-primary);
+    font-size: 1rem;
+}
+
+.preview-content .email-item.copied {
+    background-color: var(--color-primary-dark);
+    border-color: var(--color-primary);
+    color: white;
+}
+
+.preview-content .email-item.copied i {
+    color: white;
+}
+
+.preview-content .email-item .copy-email {
+    margin-left: auto;
+    color: var(--color-text-secondary);
+    font-size: 0.9rem;
+    cursor: pointer;
+    padding: 0.3rem;
+    border-radius: 4px;
+    transition: all 0.2s ease;
+}
+
+.preview-content .email-item .copy-email:hover {
+    color: var(--color-primary);
+    background-color: var(--color-surface-border);
 }
 
 .preview-content .actions {
@@ -913,7 +968,7 @@ input:-webkit-autofill:active {
 }
 
 .preview-content .primary-btn {
-    background-color: var(--color-primary);
+    background-color: var(--color-primary-dark);
     color: white;
     border: none;
 }
@@ -930,6 +985,7 @@ input:-webkit-autofill:active {
 
 .preview-content .description {
     white-space: pre-wrap;
+    padding: 1.5rem 0;
 }
 
 /* Mobile responsive styles */
@@ -1037,4 +1093,90 @@ input:-webkit-autofill:active {
 .filters-right {
     display: flex;
     align-items: flex-end;
+}
+
+/* Pagination Controls */
+.pagination-controls {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 2rem;
+    padding: 1rem;
+    background-color: var(--color-surface);
+    border-radius: 8px;
+    box-shadow: 0 2px 4px var(--color-box-shadow);
+}
+
+.page-size-selector {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.page-size-selector label {
+    color: var(--color-text-secondary);
+    font-size: 0.9rem;
+}
+
+.page-size-selector select {
+    padding: 0.5rem;
+    border: 1px solid var(--color-surface-border);
+    border-radius: 4px;
+    background-color: var(--color-background);
+    color: var(--color-text-primary);
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition: border-color 0.2s ease;
+}
+
+.page-size-selector select:hover,
+.page-size-selector select:focus {
+    border-color: var(--color-primary);
+    outline: none;
+}
+
+.pagination {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.page-link {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 1rem;
+    color: var(--color-text-primary);
+    text-decoration: none;
+    border-radius: 4px;
+    border: 1px solid var(--color-surface-border);
+    background-color: var(--color-surface);
+    transition: background-color 0.2s ease;
+    cursor: pointer;
+}
+
+.page-link:hover {
+    background-color: var(--color-surface-border);
+}
+
+.page-info {
+    color: var(--color-text-secondary);
+    font-size: 0.9rem;
+}
+
+@media (max-width: 768px) {
+    .pagination-controls {
+        flex-direction: column;
+        gap: 1rem;
+    }
+
+    .page-size-selector {
+        width: 100%;
+        justify-content: center;
+    }
+
+    .pagination {
+        width: 100%;
+        justify-content: center;
+    }
 }

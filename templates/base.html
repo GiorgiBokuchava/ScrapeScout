@@ -196,6 +196,8 @@
 
     <!-- Link to script.js -->
     <script src="{{ url_for('static', filename='script.js') }}"></script>
+
+    {% block scripts %}{% endblock %}
 </body>
 
 </html>

@@ -73,8 +73,16 @@ def jobs():
     from application.location import regions, LOC_BY_KEY
     from application.category import CATEGORIES, CAT_BY_KEY
 
+    # Get pagination parameters from query string
+    page = request.values.get("page", 1, type=int)
+    page_size = request.values.get("page_size", 10, type=int)
+
+    # Validate page size
+    if page_size not in [10, 20, 30, 50]:
+        page_size = 10
+
     if request.method == "GET":
-        return render_template("jobs.html", form=form)
+        return render_template("jobs.html", form=form, page=page, page_size=page_size)
 
     if form.validate_on_submit():
         job_location = form.regions.data
@@ -89,8 +97,18 @@ def jobs():
             sort_by=sort_by,
         )
 
+        # Calculate pagination
+        total_jobs = len(jobs_list)
+        total_pages = (total_jobs + page_size - 1) // page_size
+        page = max(1, min(page, total_pages)) if total_pages > 0 else 1
+
+        # Get paginated slice of jobs
+        start_idx = (page - 1) * page_size
+        end_idx = start_idx + page_size
+        paginated_jobs = jobs_list[start_idx:end_idx]
+
         jobs_data = []
-        for job in jobs_list:
+        for job in paginated_jobs:
             try:
                 location_display = (
                     LOC_BY_KEY[job.location_key].display
@@ -121,7 +139,17 @@ def jobs():
                 }
             )
 
-        return jsonify({"jobs": jobs_data})
+        return jsonify(
+            {
+                "jobs": jobs_data,
+                "pagination": {
+                    "page": page,
+                    "page_size": page_size,
+                    "total_pages": total_pages,
+                    "total_jobs": total_jobs,
+                },
+            }
+        )
 
     return jsonify({"jobs": [], "error": form.errors}), 400
 
@@ -235,8 +263,41 @@ def save_job():
 @app.route("/favorites")
 @login_required
 def favorites():
-    jobs = Job.query.filter_by(owner_user_id=current_user.id, favorite=True).all()
-    return render_template("favorites.html", jobs=jobs)
+    # Get pagination parameters from query string
+    page = request.values.get("page", 1, type=int)
+    page_size = request.values.get("page_size", 10, type=int)
+
+    # Validate page size
+    if page_size not in [10, 20, 30, 50]:
+        page_size = 10
+
+    # Get total count of user's favorite jobs
+    total_jobs = Job.query.filter_by(
+        owner_user_id=current_user.id, favorite=True
+    ).count()
+
+    # Calculate total pages
+    total_pages = (total_jobs + page_size - 1) // page_size
+
+    # Ensure page is within valid range
+    page = max(1, min(page, total_pages)) if total_pages > 0 else 1
+
+    # Get paginated jobs
+    jobs = (
+        Job.query.filter_by(owner_user_id=current_user.id, favorite=True)
+        .order_by(Job.date_populated.desc())
+        .offset((page - 1) * page_size)
+        .limit(page_size)
+        .all()
+    )
+
+    return render_template(
+        "favorites.html",
+        jobs=jobs,
+        page=page,
+        page_size=page_size,
+        total_pages=total_pages,
+    )
 
 
 @app.route("/unsave_job", methods=["POST"])

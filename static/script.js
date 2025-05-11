@@ -1,4 +1,5 @@
 document.addEventListener("DOMContentLoaded", () => {
+    // ---- THEME TOGGLE ----
     const toggle = document.getElementById("dark-mode-toggle");
     const circle = document.querySelector(".button-circle");
     const field_submit = document.querySelector(".field-submit");
@@ -6,7 +7,6 @@ document.addEventListener("DOMContentLoaded", () => {
     const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
     const isDarkTheme = savedTheme === "dark" || (!savedTheme && prefersDark);
 
-    // Set the toggle switch state
     if (toggle) {
         toggle.checked = isDarkTheme;
 
@@ -32,7 +32,7 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     }
 
-    // Dropdown menu for profile button
+    // ---- PROFILE DROPDOWN ----
     const profileBtn = document.getElementById('profile-btn');
     const dropdownMenu = document.getElementById('dropdown-menu');
 
@@ -59,7 +59,7 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     }
 
-    // Progress ring for flash messages
+    // ---- FLASH RINGS ----
     const flashMessages = document.querySelectorAll('.flash-message');
 
     flashMessages.forEach((flash) => {
@@ -109,11 +109,14 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     });
 
-    // Load scraped jobs
-    const jobForm = document.getElementById("job-form");
+    // ---- JOBS UI SETUP ----
+    const form = document.getElementById("job-form");
+    let currentPage = parseInt(form.dataset.page, 10);
+    let currentPageSize = parseInt(form.dataset.pageSize, 10);
     const resultsContainer = document.getElementById("results-container");
+    const loadingIndicator = document.getElementById("loading");
     const previewPanel = document.getElementById("preview-panel");
-    const closePreviewBtn = document.querySelector(".close-preview");
+    const closePreviewBtn = previewPanel.querySelector(".close-preview");
     let selectedJob = null;
 
     // Add overlay div
@@ -122,12 +125,12 @@ document.addEventListener("DOMContentLoaded", () => {
     document.body.appendChild(overlay);
 
     // Add filter summary functionality
-    function updateFilterSummary(jobs, formData) {
+    function updateFilterSummary(pagination, formData) {
         const resultsCount = document.getElementById('results-count');
         const activeFilters = document.getElementById('active-filters');
 
         // Update results count
-        resultsCount.innerHTML = `<i class="fa fa-list"></i> ${jobs.length} jobs found`;
+        resultsCount.innerHTML = `<i class="fa fa-list"></i> ${pagination.total_jobs} jobs found`;
 
         // Get active filters
         const filters = [];
@@ -154,43 +157,30 @@ document.addEventListener("DOMContentLoaded", () => {
         activeFilters.innerHTML = filters.length ? filters.join('') : '';
     }
 
-    // Update job form submission to include filter summary
-    if (jobForm) {
-        jobForm.addEventListener("submit", async function (event) {
-            event.preventDefault();
+    function updatePaginationControls(pagination) {
+        const paginationControls = document.getElementById('pagination-controls');
+        const paginationContainer = document.getElementById('pagination');
 
-            // Show the loading indicator
-            document.getElementById("loading").style.display = "block";
-            resultsContainer.innerHTML = "";
+        if (pagination.total_pages <= 1) {
+            paginationControls.style.display = 'none';
+            return;
+        }
 
-            // Gather form data
-            const formData = new FormData(event.target);
+        paginationControls.style.display = 'flex';
+        document.getElementById('page-size').value = pagination.page_size;
 
-            try {
-                const response = await fetch("/jobs", {
-                    method: "POST",
-                    body: formData
-                });
+        let html = '';
+        if (pagination.page > 1) html +=
+            `<button class="page-link" onclick="updatePage(${pagination.page - 1})">
+          <i class="fa fa-chevron-left"></i> Previous
+        </button>`;
+        html += `<span class="page-info">Page ${pagination.page} of ${pagination.total_pages}</span>`;
+        if (pagination.page < pagination.total_pages) html +=
+            `<button class="page-link" onclick="updatePage(${pagination.page + 1})">
+          Next <i class="fa fa-chevron-right"></i>
+        </button>`;
 
-                const data = await response.json();
-
-                // Hide loading indicator
-                document.getElementById("loading").style.display = "none";
-
-                if (data.jobs && data.jobs.length > 0) {
-                    renderJobResults(data.jobs);
-                    updateFilterSummary(data.jobs, formData);
-                } else {
-                    resultsContainer.innerHTML = "<p>No jobs found matching your criteria.</p>";
-                    updateFilterSummary([], formData);
-                }
-            } catch (err) {
-                console.error("Error fetching jobs:", err);
-                document.getElementById("loading").style.display = "none";
-                resultsContainer.innerHTML = "<p>Error fetching jobs. Please try again.</p>";
-                updateFilterSummary([], new FormData(event.target));
-            }
-        });
+        paginationContainer.innerHTML = html;
     }
 
     function renderJobResults(jobs) {
@@ -217,7 +207,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 </div>
             `;
 
-            jobElement.addEventListener('click', async (e) => {
+            jobElement.addEventListener('click', async () => {
                 // Store current job data
                 selectedJob = job;
                 // Show preview for this job
@@ -353,9 +343,28 @@ document.addEventListener("DOMContentLoaded", () => {
             job.email = email ? email.replace(/[\s\n\r]+/g, '').trim() : 'N/A';
 
             const emailHtml = job.email && job.email !== 'N/A' ?
-                `<div class="metadata-item" style="margin-bottom: 1rem;"><i class="fa fa-envelope"></i>${job.email}</div>` : '';
+                `<div class="email-item" title="Click to copy email"><i class="fa fa-envelope"></i>${job.email}</div>` : '';
 
             descriptionElement.innerHTML = emailHtml + (description || 'No description available');
+
+            // Add copy functionality to email item
+            const emailItem = descriptionElement.querySelector('.email-item');
+            if (emailItem) {
+                emailItem.addEventListener('click', async () => {
+                    try {
+                        await navigator.clipboard.writeText(job.email);
+                        const originalContent = emailItem.innerHTML;
+                        emailItem.innerHTML = '<i class="fa fa-check"></i> Copied!';
+                        emailItem.classList.add('copied');
+                        setTimeout(() => {
+                            emailItem.innerHTML = originalContent;
+                            emailItem.classList.remove('copied');
+                        }, 2000);
+                    } catch (err) {
+                        console.error('Failed to copy email:', err);
+                    }
+                });
+            }
         }
     }
 
@@ -457,8 +466,44 @@ document.addEventListener("DOMContentLoaded", () => {
 
         lastScrollY = scrollTop <= 0 ? 0 : scrollTop; // Fix for Safari
     });
-});
 
+    async function submitSearch() {
+        loadingIndicator.style.display = 'block';
+        const formData = new FormData(form);
+        formData.append('page', currentPage);
+        formData.append('page_size', currentPageSize);
+
+        try {
+            const res = await fetch('/jobs', {
+                method: 'POST',
+                body: formData,
+                headers: { 'X-Requested-With': 'XMLHttpRequest' }
+            });
+            const data = await res.json();
+            loadingIndicator.style.display = 'none';
+
+            if (data.error) return console.error(data.error);
+
+            renderJobResults(data.jobs);
+            updatePaginationControls(data.pagination);
+            updateFilterSummary(data.pagination, formData);
+        } catch (err) {
+            console.error('Fetch error', err);
+            loadingIndicator.style.display = 'none';
+        }
+    }
+
+    // Expose pagination controls
+    window.updatePage = page => { currentPage = page; submitSearch(); };
+    window.updatePageSize = size => { currentPageSize = parseInt(size, 10); currentPage = 1; submitSearch(); };
+
+    // Event bindings
+    form.addEventListener('submit', e => { e.preventDefault(); currentPage = 1; submitSearch(); });
+    closePreviewBtn.addEventListener('click', () => {
+        previewPanel.classList.remove('show');
+        overlay.classList.remove('show');
+    });
+});
 
 console.log(`                                                                                
                              ./%@@@@@@@@@@@@@@%*                                
