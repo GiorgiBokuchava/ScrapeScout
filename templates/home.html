@@ -1,9 +1,194 @@
 {% extends "base.html" %}
 
 {% block title %}
-Home
+Home - ScrapeScout
 {% endblock %}
 
 {% block content %}
-HOMEPAGE content
+<div class="home-page-wrapper">
+    <!-- Hero Section -->
+    <div class="hero-section">
+        <div class="hero-container">
+            <div class="hero-content">
+                <h1 class="hero-title">Find Your Dream Job in Georgia</h1>
+                <p class="hero-subtitle">Search through thousands of job listings from top Georgian job sites</p>
+                <form action="{{ url_for('jobs') }}" method="POST" class="search-form">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <input type="text" name="keyword" placeholder="Job title, company, or keywords"
+                        class="search-input">
+                    <button type="submit" class="search-button">
+                        Search Jobs
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Featured Categories -->
+    <div class="categories-section">
+        <div class="categories-container">
+            <h2 class="section-title">Popular Job Categories</h2>
+            <div class="categories-grid">
+                <a href="{{ url_for('jobs') }}" onclick="submitCategorySearch('IT_PROGRAMMING')" class="category-card">
+                    <div class="category-icon">
+                        <i class="fas fa-laptop-code"></i>
+                    </div>
+                    <h3 class="category-name">IT & Software</h3>
+                </a>
+                <a href="{{ url_for('jobs') }}" onclick="submitCategorySearch('FINANCE')" class="category-card">
+                    <div class="category-icon">
+                        <i class="fas fa-chart-line"></i>
+                    </div>
+                    <h3 class="category-name">Finance</h3>
+                </a>
+                <a href="{{ url_for('jobs') }}" onclick="submitCategorySearch('PR_MARKETING')" class="category-card">
+                    <div class="category-icon">
+                        <i class="fas fa-bullhorn"></i>
+                    </div>
+                    <h3 class="category-name">Marketing</h3>
+                </a>
+                <a href="{{ url_for('jobs') }}" onclick="submitCategorySearch('SALES')" class="category-card">
+                    <div class="category-icon">
+                        <i class="fas fa-handshake"></i>
+                    </div>
+                    <h3 class="category-name">Sales</h3>
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Jobs -->
+    <div class="jobs-section">
+        <div class="jobs-container">
+            <h2 class="section-title">Latest Job Opportunities</h2>
+            <div class="jobs-grid">
+                {% for job in recent_jobs %}
+                <div class="job-card">
+                    <h3 class="job-title">{{ job.title }}</h3>
+                    <p class="job-company">{{ job.company }}</p>
+                    <div class="job-location">
+                        <i class="fas fa-map-marker-alt"></i>
+                        <span>{{ job.location }}</span>
+                    </div>
+                    <a href="{{ url_for('jobs') }}" target="" class="job-link">
+                        View All Jobs <i class="fas fa-arrow-right"></i>
+                    </a>
+                </div>
+                {% endfor %}
+            </div>
+            <div class="text-center">
+                <a href="{{ url_for('jobs') }}" class="view-all-button">
+                    View All Jobs
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Features Section -->
+    <div class="features-section">
+        <div class="features-container">
+            <h2 class="section-title">Why Choose ScrapeScout?</h2>
+            <div class="features-grid">
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <i class="fas fa-search"></i>
+                    </div>
+                    <h3 class="feature-title">Smart Search</h3>
+                    <p class="feature-description">Find relevant jobs across multiple Georgian job sites with one search
+                    </p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <i class="fas fa-bell"></i>
+                    </div>
+                    <h3 class="feature-title">Job Alerts</h3>
+                    <p class="feature-description">Get notified when new jobs matching your criteria are posted</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <i class="fas fa-bookmark"></i>
+                    </div>
+                    <h3 class="feature-title">Save Jobs</h3>
+                    <p class="feature-description">Save interesting jobs and apply when you're ready</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- CTA Section -->
+    <div class="cta-section">
+        <div class="cta-container">
+            <h2 class="cta-title">Ready to Find Your Next Career Move?</h2>
+            <p class="cta-subtitle">Join thousands of job seekers who found their dream jobs through ScrapeScout</p>
+            <a href="{{ url_for('jobs') }}" class="cta-button">
+                Start Your Job Search
+            </a>
+        </div>
+    </div>
+</div>
+
+<script>
+    function submitCategorySearch(category) {
+        event.preventDefault();
+        console.log('Submitting category search:', category);
+
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = "{{ url_for('jobs') }}";
+
+        const csrfInput = document.createElement('input');
+        csrfInput.type = 'hidden';
+        csrfInput.name = 'csrf_token';
+        csrfInput.value = "{{ csrf_token() }}";
+
+        const categoryInput = document.createElement('input');
+        categoryInput.type = 'hidden';
+        categoryInput.name = 'categories';
+        categoryInput.value = category;
+
+        form.appendChild(csrfInput);
+        form.appendChild(categoryInput);
+        document.body.appendChild(form);
+        form.submit();
+    }
+
+    // Add event listener to the search form
+    document.addEventListener('DOMContentLoaded', function () {
+        const searchForm = document.querySelector('.search-form');
+        console.log('Search form found:', searchForm);
+
+        if (searchForm) {
+            searchForm.addEventListener('submit', function (event) {
+                event.preventDefault();
+                console.log('Form submitted');
+
+                const formData = new FormData(this);
+                const keyword = formData.get('keyword');
+                console.log('Keyword:', keyword);
+
+                // Create and submit the form
+                const form = document.createElement('form');
+                form.method = 'POST';
+                form.action = "{{ url_for('jobs') }}";
+
+                const csrfInput = document.createElement('input');
+                csrfInput.type = 'hidden';
+                csrfInput.name = 'csrf_token';
+                csrfInput.value = "{{ csrf_token() }}";
+
+                const keywordInput = document.createElement('input');
+                keywordInput.type = 'hidden';
+                keywordInput.name = 'keyword';
+                keywordInput.value = keyword;
+
+                form.appendChild(csrfInput);
+                form.appendChild(keywordInput);
+                document.body.appendChild(form);
+
+                console.log('Submitting form to:', form.action);
+                form.submit();
+            });
+        }
+    });
+</script>
 {% endblock %}

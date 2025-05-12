@@ -25,17 +25,6 @@ class User(db.Model, UserMixin):
     saved_jobs = db.relationship("SavedJob", back_populates="user", lazy=True)
     viewed_jobs = db.relationship("ViewedJob", back_populates="user", lazy=True)
 
-    # user preferences
-    theme = db.Column(db.String(10), default="system")  # light, dark, system
-    font_size = db.Column(db.Integer, default=14)
-    default_location = db.Column(db.String(50))
-    jobs_per_page = db.Column(db.Integer, default=20)
-    sort_order = db.Column(db.String(10), default="newest")  # newest, oldest, relevance
-
-    profile_visible = db.Column(db.Boolean, default=True)
-    activity_visible = db.Column(db.Boolean, default=True)
-    data_collection_enabled = db.Column(db.Boolean, default=True)
-
     @property
     def password(self):
         raise AttributeError("Password is write‐only")
@@ -53,13 +42,6 @@ class User(db.Model, UserMixin):
             "username": self.username,
             "email": self.email_address,
             "created_at": self.created_at.isoformat(),
-            "preferences": {
-                "theme": self.theme,
-                "font_size": self.font_size,
-                "default_location": self.default_location,
-                "jobs_per_page": self.jobs_per_page,
-                "sort_order": self.sort_order,
-            },
         }
 
 

@@ -48,7 +48,7 @@ class JobSearchForm(FlaskForm):
     REGION_CHOICES = [(reg.key, reg.display) for reg in regions()]
 
     # City dropdown will be populated in the view via `cities_of(...)`
-    # – leave it empty here or fill with “All cities”.
+    # – leave it empty here or fill with "All cities".
     CITY_CHOICES = [("ALL", "All Cities")]
 
     GROUP_CHOICES = [("ALL", "All Groups")] + [(g, g) for g in groups()]
@@ -69,3 +69,20 @@ class JobSearchForm(FlaskForm):
     categories = SelectField("Category", choices=CATEGORY_CHOICES, default="ALL")
     sort_by = SelectField("Sort By", choices=SORT_CHOICES, default="date_posted_desc")
     keyword = StringField("Keyword")
+
+
+class ProfileForm(FlaskForm):
+    username = StringField(
+        label="Username", validators=[Length(min=5, max=30), DataRequired()]
+    )
+    email = StringField(label="Email Address", validators=[Email(), DataRequired()])
+    current_password = PasswordField(
+        label="Current Password", validators=[DataRequired()]
+    )
+    new_password = PasswordField(
+        label="New Password", validators=[Length(min=5, max=100)]
+    )
+    confirm_password = PasswordField(
+        label="Confirm New Password", validators=[EqualTo("new_password")]
+    )
+    submit = SubmitField(label="Save Changes")

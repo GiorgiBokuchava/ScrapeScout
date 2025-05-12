@@ -155,12 +155,8 @@
                     <ul class="dropdown-menu" id="dropdown-menu">
                         <li><span class="dropdown-item dropdown-username"><i class="fa fa-user"></i> {{
                                 current_user.username }}</span></li>
-                        <li><a class="dropdown-item" href="{{ url_for('profile') }}"><i class="fa fa-user-circle"></i>
-                                Profile</a></li>
                         <li><a class="dropdown-item" href="{{ url_for('favorites') }}"><i class="fa fa-bookmark"></i>
                                 Favorites</a></li>
-                        <li><a class="dropdown-item" href="{{ url_for('settings') }}"><i class="fa fa-cog"></i>
-                                Settings</a></li>
                         <li class="dropdown-divider"></li>
                         <li><a class="dropdown-item text-danger" href="{{ url_for('logout') }}"><i
                                     class="fa fa-sign-out"></i> Logout</a></li>

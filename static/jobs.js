@@ -73,7 +73,10 @@ document.addEventListener('DOMContentLoaded', () => {
             const data = await res.json();
             loadingIndicator.style.display = 'none';
 
-            if (data.error) return console.error(data.error);
+            if (data.error) {
+                console.error(data.error);
+                return;
+            }
 
             renderJobResults(data.jobs);
             updatePaginationControls(data.pagination);
@@ -100,26 +103,73 @@ document.addEventListener('DOMContentLoaded', () => {
             <span class="job-item-detail"><i class="fa fa-calendar"></i> ${job.date_posted}</span>
           </div>
         `;
+            el.addEventListener('click', () => showJobPreview(job, el));
             resultsContainer.appendChild(el);
         });
     }
 
-    function showJobPreview(jobItem) {
+    function showJobPreview(job, el) {
         document.querySelector('.job-item.selected')?.classList.remove('selected');
-        jobItem.classList.add('selected');
+        el.classList.add('selected');
 
         const previewContent = previewPanel.querySelector('.preview-content');
         previewContent.innerHTML = `
-        <h1>${jobItem.querySelector('h3').textContent}</h1>
-        <div class="metadata">${jobItem.querySelector('.job-item-details').innerHTML}</div>
-        <div class="description">${jobItem.dataset.description}</div>
-        <a href="${jobItem.dataset.url}" target="_blank" class="action-btn primary-btn">
-          <i class="fa fa-external-link"></i> View Job
-        </a>
+        <div class="preview-header">
+            <h1>${job.title}</h1>
+            <div class="company"><i class="fa fa-building"></i> ${job.company}</div>
+            <div class="metadata">
+                <div class="metadata-item"><i class="fa fa-map-marker"></i> ${job.location}</div>
+                <div class="metadata-item"><i class="fa fa-folder"></i> ${job.category}</div>
+                <div class="metadata-item"><i class="fa fa-calendar"></i> ${job.date_posted}</div>
+            </div>
+        </div>
+        <div class="preview-actions">
+            <a href="${job.url}" target="_blank" class="action-btn primary-btn">
+                <i class="fa fa-external-link"></i> View Job
+            </a>
+            <button class="action-btn secondary-btn save-btn">
+                <i class="fa fa-bookmark"></i> Save Job
+            </button>
+        </div>
+        <div class="preview-description">
+            ${job.description}
+        </div>
       `;
 
         previewPanel.classList.add('show');
         overlay.classList.add('show');
+
+        // Add save job functionality
+        const saveBtn = previewContent.querySelector('.save-btn');
+        if (saveBtn) {
+            saveBtn.addEventListener('click', async () => {
+                saveBtn.disabled = true;
+                saveBtn.innerHTML = `<i class="fa fa-spinner fa-spin"></i> Saving...`;
+                const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+                try {
+                    const resp = await fetch('/save_job', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRFToken': csrfToken,
+                            'X-CSRF-Token': csrfToken
+                        },
+                        body: JSON.stringify({ url: job.url })
+                    });
+                    if (!resp.ok) throw new Error('Network error');
+                    const data = await resp.json();
+                    if (data.success) {
+                        saveBtn.innerHTML = `<i class="fa fa-check"></i> Saved`;
+                    } else {
+                        throw new Error(data.message || 'Failed to save job');
+                    }
+                } catch (err) {
+                    console.error(err);
+                    saveBtn.innerHTML = `<i class="fa fa-exclamation-triangle"></i> Error`;
+                }
+                saveBtn.disabled = false;
+            });
+        }
     }
 
     // Expose pagination controls
@@ -127,13 +177,20 @@ document.addEventListener('DOMContentLoaded', () => {
     window.updatePageSize = size => { currentPageSize = parseInt(size, 10); currentPage = 1; submitSearch(); };
 
     // Event bindings
-    form.addEventListener('submit', e => { e.preventDefault(); currentPage = 1; submitSearch(); });
-    resultsContainer.addEventListener('click', e => {
-        const job = e.target.closest('.job-item');
-        if (job) showJobPreview(job);
+    form.addEventListener('submit', e => {
+        e.preventDefault();
+        currentPage = 1;
+        submitSearch();
     });
+
     closePreviewBtn.addEventListener('click', () => {
         previewPanel.classList.remove('show');
         overlay.classList.remove('show');
+        document.querySelector('.job-item.selected')?.classList.remove('selected');
     });
+
+    // Initial load if there are jobs
+    if (resultsContainer.children.length > 0) {
+        updateActiveFilters();
+    }
 });

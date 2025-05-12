@@ -11,6 +11,7 @@ from html import escape
 from datetime import datetime
 import json
 from flask import make_response
+from application.location import LOC_BY_KEY
 
 
 @app.route("/healthz")
@@ -21,7 +22,16 @@ def healthz():
 @app.route("/")
 @app.route("/home")
 def home_page():
-    return render_template("home.html")
+    # Get the most recent jobs with default parameters
+    recent_jobs = get_jobs(
+        searched_location="ALL",
+        searched_category="ALL",
+        searched_keyword="",
+        sort_by="date_posted_desc",
+    )[
+        :7
+    ]  # Get 7 most recent jobs
+    return render_template("home.html", recent_jobs=recent_jobs)
 
 
 @app.route("/register", methods=["GET", "POST"])
@@ -87,78 +97,127 @@ def jobs():
     if request.method == "GET":
         return render_template("jobs.html", form=form, page=page, page_size=page_size)
 
-    if form.validate_on_submit():
-        job_location = form.regions.data
-        job_category = form.categories.data
-        job_keyword = form.keyword.data
-        sort_by = form.sort_by.data
+    # Handle POST request
+    if request.headers.get("X-Requested-With") == "XMLHttpRequest":
+        # This is an AJAX request, return JSON
+        if form.validate_on_submit():
+            job_location = form.regions.data
+            job_category = form.categories.data
+            job_keyword = form.keyword.data
+            sort_by = form.sort_by.data
 
-        jobs_list = get_jobs(
-            searched_location=job_location,
-            searched_category=job_category,
-            searched_keyword=job_keyword,
-            sort_by=sort_by,
-        )
-
-        # Calculate pagination
-        total_jobs = len(jobs_list)
-        total_pages = (total_jobs + page_size - 1) // page_size
-        page = max(1, min(page, total_pages)) if total_pages > 0 else 1
-
-        # Get paginated slice of jobs
-        start_idx = (page - 1) * page_size
-        end_idx = start_idx + page_size
-        paginated_jobs = jobs_list[start_idx:end_idx]
-
-        jobs_data = []
-        for job in paginated_jobs:
-            try:
-                location_display = (
-                    job.location
-                    if job.location and job.location != "All Locations"
-                    else (
-                        LOC_BY_KEY[job.location_key].display
-                        if job.location_key and job.location_key != "ALL"
-                        else "All Locations"
-                    )
-                )
-                category_display = (
-                    CAT_BY_KEY[job.category_key].display
-                    if job.category_key and job.category_key != "ALL"
-                    else "All Categories"
-                )
-            except KeyError:
-                # Fallback to stored values if keys are invalid
-                location_display = job.location
-                category_display = job.category
-
-            jobs_data.append(
-                {
-                    "title": job.title,
-                    "company": job.company,
-                    "url": job.url,
-                    "date_posted": job.date_posted,
-                    "description": job.description,
-                    "location_key": job.location_key,
-                    "location": location_display,
-                    "category_key": job.category_key,
-                    "category": category_display,
-                }
+            jobs_list = get_jobs(
+                searched_location=job_location,
+                searched_category=job_category,
+                searched_keyword=job_keyword,
+                sort_by=sort_by,
             )
 
-        return jsonify(
-            {
-                "jobs": jobs_data,
-                "pagination": {
-                    "page": page,
-                    "page_size": page_size,
-                    "total_pages": total_pages,
-                    "total_jobs": total_jobs,
-                },
-            }
-        )
+            # Calculate pagination
+            total_jobs = len(jobs_list)
+            total_pages = (total_jobs + page_size - 1) // page_size
+            page = max(1, min(page, total_pages)) if total_pages > 0 else 1
 
-    return jsonify({"jobs": [], "error": form.errors}), 400
+            # Get paginated slice of jobs
+            start_idx = (page - 1) * page_size
+            end_idx = start_idx + page_size
+            paginated_jobs = jobs_list[start_idx:end_idx]
+
+            jobs_data = []
+            for job in paginated_jobs:
+                try:
+                    location_display = (
+                        job.location
+                        if job.location and job.location != "All Locations"
+                        else (
+                            LOC_BY_KEY[job.location_key].display
+                            if job.location_key and job.location_key != "ALL"
+                            else "All Locations"
+                        )
+                    )
+                    category_display = (
+                        CAT_BY_KEY[job.category_key].display
+                        if job.category_key and job.category_key != "ALL"
+                        else "All Categories"
+                    )
+                except KeyError:
+                    # Fallback to stored values if keys are invalid
+                    location_display = job.location
+                    category_display = job.category
+
+                # Format date_posted as 'DD MMM, YYYY'
+                if hasattr(job.date_posted, "strftime"):
+                    date_posted_str = job.date_posted.strftime("%d %b, %Y")
+                else:
+                    try:
+                        dt = datetime.strptime(
+                            str(job.date_posted).split()[0], "%Y-%m-%d"
+                        )
+                        date_posted_str = dt.strftime("%d %b, %Y")
+                    except Exception:
+                        date_posted_str = str(job.date_posted)
+
+                jobs_data.append(
+                    {
+                        "title": job.title,
+                        "company": job.company,
+                        "url": job.url,
+                        "date_posted": date_posted_str,
+                        "description": job.description,
+                        "location_key": job.location_key,
+                        "location": location_display,
+                        "category_key": job.category_key,
+                        "category": category_display,
+                    }
+                )
+
+            return jsonify(
+                {
+                    "jobs": jobs_data,
+                    "pagination": {
+                        "page": page,
+                        "page_size": page_size,
+                        "total_pages": total_pages,
+                        "total_jobs": total_jobs,
+                    },
+                }
+            )
+        return jsonify({"jobs": [], "error": form.errors}), 400
+    else:
+        # This is a regular form submission, render the template
+        if form.validate_on_submit():
+            job_location = form.regions.data
+            job_category = form.categories.data
+            job_keyword = form.keyword.data
+            sort_by = form.sort_by.data
+
+            jobs_list = get_jobs(
+                searched_location=job_location,
+                searched_category=job_category,
+                searched_keyword=job_keyword,
+                sort_by=sort_by,
+            )
+
+            # Calculate pagination
+            total_jobs = len(jobs_list)
+            total_pages = (total_jobs + page_size - 1) // page_size
+            page = max(1, min(page, total_pages)) if total_pages > 0 else 1
+
+            # Get paginated slice of jobs
+            start_idx = (page - 1) * page_size
+            end_idx = start_idx + page_size
+            paginated_jobs = jobs_list[start_idx:end_idx]
+
+            return render_template(
+                "jobs.html",
+                form=form,
+                jobs=paginated_jobs,
+                page=page,
+                page_size=page_size,
+                total_pages=total_pages,
+                total_jobs=total_jobs,
+            )
+        return render_template("jobs.html", form=form, page=page, page_size=page_size)
 
 
 @app.route("/get_description", methods=["POST"])
@@ -305,6 +364,16 @@ def favorites():
 
     # Get the actual Job objects from the SavedJob relationships
     jobs = [saved_job.job for saved_job in saved_jobs]
+    # Format date_posted as 'DD MMM, YYYY' for each job
+    for job in jobs:
+        if hasattr(job.date_posted, "strftime"):
+            job.date_posted = job.date_posted.strftime("%d %b, %Y")
+        else:
+            try:
+                dt = datetime.strptime(str(job.date_posted).split()[0], "%Y-%m-%d")
+                job.date_posted = dt.strftime("%d %b, %Y")
+            except Exception:
+                job.date_posted = str(job.date_posted)
 
     return render_template(
         "favorites.html",
@@ -341,111 +410,15 @@ def about():
     return render_template("about.html")
 
 
-@app.route("/profile")
-@login_required
-def profile():
-    # Get user statistics
-    saved_jobs_count = len(current_user.saved_jobs)
-    viewed_jobs_count = len(current_user.viewed_jobs)
-    days_active = (datetime.now() - current_user.created_at).days
-
-    return render_template(
-        "profile.html",
-        saved_jobs_count=saved_jobs_count,
-        viewed_jobs_count=viewed_jobs_count,
-        days_active=days_active,
-    )
-
-
-@app.route("/settings")
-@login_required
-def settings():
-    # Get current user preferences
-    current_theme = current_user.theme or "system"
-    current_font_size = current_user.font_size or 14
-    current_location = current_user.default_location
-    jobs_per_page = current_user.jobs_per_page or 20
-    sort_order = current_user.sort_order or "newest"
-    profile_visible = current_user.profile_visible
-    activity_visible = current_user.activity_visible
-    data_collection_enabled = current_user.data_collection_enabled
-
-    # Get available locations
-    locations = Location.query.all()
-
-    return render_template(
-        "settings.html",
-        current_theme=current_theme,
-        current_font_size=current_font_size,
-        locations=locations,
-        current_location=current_location,
-        jobs_per_page=jobs_per_page,
-        sort_order=sort_order,
-        profile_visible=profile_visible,
-        activity_visible=activity_visible,
-        data_collection_enabled=data_collection_enabled,
-    )
-
-
-@app.route("/update_appearance", methods=["POST"])
-@login_required
-def update_appearance():
-    theme = request.form.get("theme")
-    font_size = int(request.form.get("font_size"))
-
-    current_user.theme = theme
-    current_user.font_size = font_size
-    db.session.commit()
-
-    flash("Appearance settings updated successfully!", "success")
-    return redirect(url_for("settings"))
-
-
-@app.route("/update_search_preferences", methods=["POST"])
-@login_required
-def update_search_preferences():
-    default_location = request.form.get("default_location")
-    jobs_per_page = int(request.form.get("jobs_per_page"))
-    sort_order = request.form.get("sort_order")
-
-    current_user.default_location = default_location
-    current_user.jobs_per_page = jobs_per_page
-    current_user.sort_order = sort_order
-    db.session.commit()
-
-    flash("Search preferences updated successfully!", "success")
-    return redirect(url_for("settings"))
-
-
-@app.route("/update_privacy", methods=["POST"])
-@login_required
-def update_privacy():
-    profile_visible = "profile_visibility" in request.form
-    activity_visible = "activity_visibility" in request.form
-    data_collection = "data_collection" in request.form
-
-    current_user.profile_visible = profile_visible
-    current_user.activity_visible = activity_visible
-    current_user.data_collection_enabled = data_collection
-    db.session.commit()
-
-    flash("Privacy settings updated successfully!", "success")
-    return redirect(url_for("settings"))
-
-
 @app.route("/delete_account")
 @login_required
 def delete_account():
     # Delete user's data
     SavedJob.query.filter_by(user_id=current_user.id).delete()
-    ViewedJob.query.filter_by(user_id=current_user.id).delete()
-
-    # Delete the user
     db.session.delete(current_user)
     db.session.commit()
-
     logout_user()
-    flash("Your account has been deleted successfully.", "success")
+    flash("Your account has been deleted.", "success")
     return redirect(url_for("home_page"))
 
 
@@ -456,26 +429,19 @@ def export_data():
     user_data = {
         "username": current_user.username,
         "email": current_user.email_address,
-        "created_at": current_user.created_at.isoformat(),
-        "saved_jobs": [job.to_dict() for job in current_user.saved_jobs],
-        "viewed_jobs": [job.to_dict() for job in current_user.viewed_jobs],
-        "preferences": {
-            "theme": current_user.theme,
-            "font_size": current_user.font_size,
-            "default_location": current_user.default_location,
-            "jobs_per_page": current_user.jobs_per_page,
-            "sort_order": current_user.sort_order,
-        },
+        "saved_jobs": [
+            {
+                "title": job.job.title,
+                "company": job.job.company,
+                "url": job.job.url,
+                "date_saved": job.date_saved.isoformat(),
+            }
+            for job in current_user.saved_jobs
+        ],
     }
 
-    # Convert to JSON
-    json_data = json.dumps(user_data, indent=2)
-
-    # Create response with JSON file
-    response = make_response(json_data)
+    # Create response with JSON data
+    response = make_response(json.dumps(user_data, indent=2))
     response.headers["Content-Type"] = "application/json"
-    response.headers["Content-Disposition"] = (
-        f"attachment; filename=scrapescout_data_{current_user.username}.json"
-    )
-
+    response.headers["Content-Disposition"] = "attachment; filename=user_data.json"
     return response

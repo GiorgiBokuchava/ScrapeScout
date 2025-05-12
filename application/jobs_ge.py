@@ -6,19 +6,26 @@ from application.models import Job
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
 import time
-from datetime import datetime
-import locale
-
-# ← new imports
+from datetime import datetime, timedelta
+from pytz import utc
 from application.location import loc_to_site_code, site_code_to_loc, LOC_BY_KEY
-from application.category import cat_to_site_code, site_code_to_cat
+from application.category import cat_to_site_code, site_code_to_cat, CAT_BY_KEY
 
-# Set locale for Georgian month names
-try:
-    locale.setlocale(locale.LC_TIME, "ka_GE.UTF-8")
-except locale.Error:
-    # Fallback to English if Georgian locale is not available
-    locale.setlocale(locale.LC_TIME, "en_US.UTF-8")
+# Georgian month names mapping
+GEORGIAN_MONTHS = {
+    "იანვარი": 1,
+    "თებერვალი": 2,
+    "მარტი": 3,
+    "აპრილი": 4,
+    "მაისი": 5,
+    "ივნისი": 6,
+    "ივლისი": 7,
+    "აგვისტო": 8,
+    "სექტემბერი": 9,
+    "ოქტომბერი": 10,
+    "ნოემბერი": 11,
+    "დეკემბერი": 12,
+}
 
 job_keyword = ""  # &q=KEYWORD
 
@@ -53,9 +60,48 @@ def get_fully_loaded_html(url: str) -> str:
 def extractDescription(job_URL):
     job_page = requests.get(job_URL)
     job_soup = BeautifulSoup(job_page.text, "html.parser")
+
+    # First check for English version link
+    english_link = job_soup.find("a", text="ინგლისურ ენაზე")
+    if english_link and english_link.get("href"):
+        # Construct full URL for English version
+        english_url = "https://www.jobs.ge" + english_link["href"]
+        try:
+            english_page = requests.get(english_url)
+            english_soup = BeautifulSoup(english_page.text, "html.parser")
+            description = english_soup.find(
+                "td", attrs={"style": "padding-top:30px; padding-bottom:40px;"}
+            )
+            if description:
+                # Process description to preserve links
+                for link in description.find_all("a"):
+                    # For mailto links, keep the email address but remove the mailto: part and query parameters
+                    if link.get("href", "").startswith("mailto:"):
+                        email = link.get("href")[7:]  # Remove 'mailto:' prefix
+                        email = email.split("?")[0]  # Remove any query parameters
+                        link.replace_with(email)
+                    else:
+                        # Replace other links with text and URL in a readable format
+                        link.replace_with(f"{link.text} {link.get('href', '')}")
+                return description
+        except Exception as e:
+            print(f"Error fetching English description: {e}")
+
+    # Fall back to original description if English version not available or failed
     description = job_soup.find(
         "td", attrs={"style": "padding-top:30px; padding-bottom:40px;"}
     )
+    if description:
+        # Process description to preserve links
+        for link in description.find_all("a"):
+            # For mailto links, keep the email address but remove the mailto: part and query parameters
+            if link.get("href", "").startswith("mailto:"):
+                email = link.get("href")[7:]  # Remove 'mailto:' prefix
+                email = email.split("?")[0]  # Remove any query parameters
+                link.replace_with(email)
+            else:
+                # Replace other links with text and URL in a readable format
+                link.replace_with(f"{link.text} {link.get('href', '')}")
     return description if description else "N/A"
 
 
@@ -68,30 +114,25 @@ def extractEmail(description):
 
 
 def parse_jobs_ge_date(date_str: str) -> datetime:
-    """Parse jobs.ge date format into datetime object."""
+    """Parse a jobs.ge date string into a timezone-aware datetime object."""
+    if not date_str or date_str == "N/A":
+        return datetime.now(utc)
+
+    # Handle "today" and "yesterday"
+    if date_str == "დღეს":
+        return datetime.now(utc)
+    if date_str == "გუშინ":
+        return datetime.now(utc) - timedelta(days=1)
+
+    # Parse regular date format (e.g., "30 აპრილი")
     try:
-        # Remove any extra whitespace
-        date_str = date_str.strip()
-
-        # Get current year
-        current_year = datetime.now().year
-
-        # Try to parse the date
-        try:
-            # First try with Georgian month names
-            date_obj = datetime.strptime(f"{date_str} {current_year}", "%d %B %Y")
-        except ValueError:
-            # If that fails, try with English month names
-            date_obj = datetime.strptime(f"{date_str} {current_year}", "%d %B %Y")
-
-        # If the parsed date is in the future, it's probably from last year
-        if date_obj > datetime.now():
-            date_obj = date_obj.replace(year=current_year - 1)
-
-        return date_obj
-    except Exception as e:
-        print(f"Error parsing date '{date_str}': {e}")
-        return datetime.now()
+        day, month = date_str.split()
+        day = int(day)
+        month = GEORGIAN_MONTHS[month]
+        year = datetime.now(utc).year
+        return datetime(year, month, day, tzinfo=utc)
+    except (ValueError, KeyError):
+        return datetime.now(utc)
 
 
 def scrape_jobs_ge(
