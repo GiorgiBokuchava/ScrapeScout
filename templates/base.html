@@ -121,8 +121,14 @@
                         <li class="nav-item">
                             <a class="nav-link" href="{{ url_for('jobs')}}">Jobs</a>
                         </li>
+                        {% if current_user.is_authenticated %}
                         <li class="nav-item">
-                            <a class="nav-link" href="#">About</a>
+                            <a class="nav-link" href="{{ url_for('favorites') }}">
+                                Favorites</a>
+                        </li>
+                        {% endif %}
+                        <li class="nav-item">
+                            <a class="nav-link" href="{{ url_for('about') }}">About</a>
                         </li>
                     </ul>
                 </div>
@@ -147,11 +153,17 @@
                         </svg>
                     </button>
                     <ul class="dropdown-menu" id="dropdown-menu">
-                        <li><span class="dropdown-item dropdown-username">{{ current_user.username }}</span></li>
-                        <li><a class="dropdown-item" href="#">Profile</a></li>
-                        <li><a class="dropdown-item" href="#">Settings</a></li>
+                        <li><span class="dropdown-item dropdown-username"><i class="fa fa-user"></i> {{
+                                current_user.username }}</span></li>
+                        <li><a class="dropdown-item" href="{{ url_for('profile') }}"><i class="fa fa-user-circle"></i>
+                                Profile</a></li>
+                        <li><a class="dropdown-item" href="{{ url_for('favorites') }}"><i class="fa fa-bookmark"></i>
+                                Favorites</a></li>
+                        <li><a class="dropdown-item" href="{{ url_for('settings') }}"><i class="fa fa-cog"></i>
+                                Settings</a></li>
                         <li class="dropdown-divider"></li>
-                        <li><a class="dropdown-item text-danger" href="{{ url_for('logout') }}">Logout</a></li>
+                        <li><a class="dropdown-item text-danger" href="{{ url_for('logout') }}"><i
+                                    class="fa fa-sign-out"></i> Logout</a></li>
                     </ul>
                 </div>
 

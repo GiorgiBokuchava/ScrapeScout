@@ -6,10 +6,19 @@ from application.models import Job
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
 import time
+from datetime import datetime
+import locale
 
 # ← new imports
 from application.location import loc_to_site_code, site_code_to_loc, LOC_BY_KEY
 from application.category import cat_to_site_code, site_code_to_cat
+
+# Set locale for Georgian month names
+try:
+    locale.setlocale(locale.LC_TIME, "ka_GE.UTF-8")
+except locale.Error:
+    # Fallback to English if Georgian locale is not available
+    locale.setlocale(locale.LC_TIME, "en_US.UTF-8")
 
 job_keyword = ""  # &q=KEYWORD
 
@@ -56,6 +65,33 @@ def extractEmail(description):
     if found:
         email = found.group(0).strip()
     return email if email else "N/A"
+
+
+def parse_jobs_ge_date(date_str: str) -> datetime:
+    """Parse jobs.ge date format into datetime object."""
+    try:
+        # Remove any extra whitespace
+        date_str = date_str.strip()
+
+        # Get current year
+        current_year = datetime.now().year
+
+        # Try to parse the date
+        try:
+            # First try with Georgian month names
+            date_obj = datetime.strptime(f"{date_str} {current_year}", "%d %B %Y")
+        except ValueError:
+            # If that fails, try with English month names
+            date_obj = datetime.strptime(f"{date_str} {current_year}", "%d %B %Y")
+
+        # If the parsed date is in the future, it's probably from last year
+        if date_obj > datetime.now():
+            date_obj = date_obj.replace(year=current_year - 1)
+
+        return date_obj
+    except Exception as e:
+        print(f"Error parsing date '{date_str}': {e}")
+        return datetime.now()
 
 
 def scrape_jobs_ge(
@@ -117,6 +153,10 @@ def scrape_jobs_ge(
             if any(w in posted for w in ["ყველა", "ვაკანსია"]):
                 continue
 
+            # Parse the date
+            parsed_date = parse_jobs_ge_date(posted)
+            formatted_date = parsed_date.strftime("%Y-%m-%d")
+
             # Look up display names and ensure we have valid objects
             loc_obj = None
             cat_obj = None
@@ -131,10 +171,9 @@ def scrape_jobs_ge(
                 title=title,
                 company=company,
                 url=job_url,
-                date_posted=posted,
+                date_posted=formatted_date,
                 salary="N/A",
                 email="...",
-                favorite=False,
                 location_key=chosen_job_location,
                 category_key=chosen_job_category,
                 location=(

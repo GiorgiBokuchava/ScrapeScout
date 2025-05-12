@@ -1,0 +1,115 @@
+{% extends "base.html" %}
+
+{% block title %}
+Profile | ScrapeScout
+{% endblock %}
+
+{% block content %}
+<div class="profile-container">
+    <div class="profile-header">
+        <div class="profile-avatar">
+            <svg width="120" height="120" class="profile-picture-large"
+                data-jdenticon-value="{{ current_user.username }}"
+                title="Profile picture for {{ current_user.username }}">
+            </svg>
+        </div>
+        <div class="profile-info">
+            <h1>{{ current_user.username }}</h1>
+            <p class="email">{{ current_user.email_address }}</p>
+            <p class="member-since">Member since {{ current_user.created_at.strftime('%B %Y') }}</p>
+        </div>
+    </div>
+
+    <div class="profile-content">
+        <div class="profile-section">
+            <h2><i class="fa fa-chart-line"></i> Activity Overview</h2>
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <i class="fa fa-bookmark"></i>
+                    <div class="stat-info">
+                        <span class="stat-value">{{ saved_jobs_count }}</span>
+                        <span class="stat-label">Saved Jobs</span>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <i class="fa fa-eye"></i>
+                    <div class="stat-info">
+                        <span class="stat-value">{{ viewed_jobs_count }}</span>
+                        <span class="stat-label">Viewed Jobs</span>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <i class="fa fa-clock"></i>
+                    <div class="stat-info">
+                        <span class="stat-value">{{ days_active }}</span>
+                        <span class="stat-label">Days Active</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="profile-section">
+            <h2><i class="fa fa-gear"></i> Account Settings</h2>
+            <form class="settings-form" method="POST" action="{{ url_for('update_profile') }}">
+                {{ form.hidden_tag() }}
+
+                <div class="form-group">
+                    <label for="username">Username</label>
+                    {{ form.username(class="form-control", value=current_user.username) }}
+                </div>
+
+                <div class="form-group">
+                    <label for="email">Email Address</label>
+                    {{ form.email(class="form-control", value=current_user.email_address) }}
+                </div>
+
+                <div class="form-group">
+                    <label for="current_password">Current Password</label>
+                    {{ form.current_password(class="form-control") }}
+                </div>
+
+                <div class="form-group">
+                    <label for="new_password">New Password</label>
+                    {{ form.new_password(class="form-control") }}
+                </div>
+
+                <div class="form-group">
+                    <label for="confirm_password">Confirm New Password</label>
+                    {{ form.confirm_password(class="form-control") }}
+                </div>
+
+                <button type="submit" class="save-button">
+                    <i class="fa fa-save"></i> Save Changes
+                </button>
+            </form>
+        </div>
+
+        <div class="profile-section">
+            <h2><i class="fa fa-bell"></i> Notification Preferences</h2>
+            <form class="notifications-form" method="POST" action="{{ url_for('update_notifications') }}">
+                {{ notification_form.hidden_tag() }}
+
+                <div class="notification-option">
+                    <label class="toggle">
+                        {{ notification_form.email_notifications(class="toggle-input") }}
+                        <span class="toggle-label">Email Notifications</span>
+                        <span class="toggle-description">Receive email updates about new job matches</span>
+                    </label>
+                </div>
+
+                <div class="notification-option">
+                    <label class="toggle">
+                        {{ notification_form.job_alerts(class="toggle-input") }}
+                        <span class="toggle-label">Job Alerts</span>
+                        <span class="toggle-description">Get notified when new jobs match your saved searches</span>
+                    </label>
+                </div>
+
+                <button type="submit" class="save-button">
+                    <i class="fa fa-save"></i> Update Preferences
+                </button>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

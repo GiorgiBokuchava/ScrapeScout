@@ -1,544 +1,474 @@
-document.addEventListener("DOMContentLoaded", () => {
-    // ---- THEME TOGGLE ----
+// static/script.js
+
+// ---- Helper Functions ----
+
+// Fetch job description & email from server
+async function fetchJobDetails(url) {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 15000);
+    const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+
+    try {
+        const res = await fetch('/get_description', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': csrfToken,
+                'X-CSRF-Token': csrfToken
+            },
+            body: JSON.stringify({ url }),
+            signal: controller.signal
+        });
+        clearTimeout(timeoutId);
+
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const data = await res.json();
+        if (data.error) throw new Error(data.error);
+        return data;
+    } catch (err) {
+        clearTimeout(timeoutId);
+        console.error('Error fetching job details:', err);
+        throw err;
+    }
+}
+
+// A simple skeleton loader markup
+function showSkeletonLoader() {
+    return `
+      <div class="skeleton-loading">
+        <div class="skeleton-text"></div>
+        <div class="skeleton-text"></div>
+        <div class="skeleton-text"></div>
+        <div class="skeleton-text"></div>
+        <div class="skeleton-text"></div>
+      </div>
+    `;
+}
+
+// ---- UI Initializers ----
+
+function initThemeToggle() {
     const toggle = document.getElementById("dark-mode-toggle");
     const circle = document.querySelector(".button-circle");
-    const field_submit = document.querySelector(".field-submit");
-    const savedTheme = localStorage.getItem("theme");
+    const fieldSubmit = document.querySelector(".field-submit");
+    const saved = localStorage.getItem("theme");
     const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
-    const isDarkTheme = savedTheme === "dark" || (!savedTheme && prefersDark);
+    const isDark = saved === "dark" || (!saved && prefersDark);
 
     if (toggle) {
-        toggle.checked = isDarkTheme;
-
-        // Toggle theme on checkbox change
+        toggle.checked = isDark;
         toggle.addEventListener("change", () => {
-            if (toggle.checked) {
-                document.documentElement.setAttribute("data-theme", "dark");
-                localStorage.setItem("theme", "dark");
-            } else {
-                document.documentElement.setAttribute("data-theme", "light");
-                localStorage.setItem("theme", "light");
-            }
+            const theme = toggle.checked ? "dark" : "light";
+            document.documentElement.setAttribute("data-theme", theme);
+            localStorage.setItem("theme", theme);
         });
     }
 
-    // Submit button circle animation
-    if (circle && field_submit) {
-        document.body.addEventListener("mousemove", (e) => {
-            const circleLeft = e.pageX - field_submit.offsetLeft - 15;
-            const circleTop = e.pageY - field_submit.offsetTop - 15;
-            circle.style.left = `${circleLeft}px`;
-            circle.style.top = `${circleTop}px`;
+    if (circle && fieldSubmit) {
+        document.body.addEventListener("mousemove", e => {
+            circle.style.left = `${e.pageX - fieldSubmit.offsetLeft - 15}px`;
+            circle.style.top = `${e.pageY - fieldSubmit.offsetTop - 15}px`;
         });
     }
+}
 
-    // ---- PROFILE DROPDOWN ----
-    const profileBtn = document.getElementById('profile-btn');
-    const dropdownMenu = document.getElementById('dropdown-menu');
+function initFlashTimers() {
+    document.querySelectorAll('.flash-message').forEach(flash => {
+        const ring = flash.querySelector('.progress-ring');
+        if (!ring) return;
+        const D = 3000, I = 10, steps = D / I, dec = 360 / steps;
+        let angle = 360, timer;
 
-    if (profileBtn && dropdownMenu) {
-        // Toggle dropdown menu on button click
-        profileBtn.addEventListener('click', (event) => {
-            event.stopPropagation(); // Prevent the click from bubbling up to the document
-            dropdownMenu.classList.toggle('show');
-        });
-
-        // Close the dropdown if clicked outside
-        document.addEventListener('click', (event) => {
-            // Check if the click target is not inside the dropdown menu or button
-            if (!dropdownMenu.contains(event.target) && !profileBtn.contains(event.target)) {
-                dropdownMenu.classList.remove('show');
-            }
-        });
-
-        // Optional: Close the dropdown when pressing the Escape key
-        document.addEventListener('keydown', (event) => {
-            if (event.key === "Escape") {
-                dropdownMenu.classList.remove('show');
-            }
-        });
-    }
-
-    // ---- FLASH RINGS ----
-    const flashMessages = document.querySelectorAll('.flash-message');
-
-    flashMessages.forEach((flash) => {
-        // Look for the progress ring inside the flash message
-        const progressRing = flash.querySelector('.progress-ring');
-        if (!progressRing) {
-            console.log("Progress ring not found for a flash message.");
-            return;
-        }
-
-        // Timer settings per flash message
-        const totalDuration = 3000; // duration in ms
-        const intervalTime = 10; // update interval in ms
-        const steps = totalDuration / intervalTime;
-        const decrement = 360 / steps;
-        let angle = 360;
-        let timer;
-
-        function updateRing() {
-            angle -= decrement;
+        function update() {
+            angle -= dec;
             if (angle <= 0) {
-                angle = 0;
                 clearInterval(timer);
                 flash.style.display = 'none';
             }
-            progressRing.style.setProperty('--angle', angle + 'deg');
+            ring.style.setProperty('--angle', angle + 'deg');
         }
+        timer = setInterval(update, I);
 
-        function startTimer() {
-            clearInterval(timer);
-            timer = setInterval(updateRing, intervalTime);
-        }
-
-        // Start timer for this flash message
-        startTimer();
-
-        // Pause the timer on hover
-        flash.addEventListener('mouseenter', function () {
-            clearInterval(timer);
-            angle = 365; // Reset slightly above full to ensure display update
-            updateRing();
-        });
-
-        // Resume the timer when the mouse leaves
-        flash.addEventListener('mouseleave', function () {
-            startTimer();
-        });
+        flash.addEventListener('mouseenter', () => clearInterval(timer));
+        flash.addEventListener('mouseleave', () => { angle = 360; timer = setInterval(update, I); });
     });
+}
 
-    // ---- JOBS UI SETUP ----
+function initProfileDropdown() {
+    const btn = document.getElementById('profile-btn');
+    const menu = document.getElementById('dropdown-menu');
+    if (!btn || !menu) return;
+
+    btn.addEventListener('click', e => {
+        e.stopPropagation();
+        menu.classList.toggle('show');
+    });
+    document.addEventListener('click', () => menu.classList.remove('show'));
+    document.addEventListener('keydown', e => { if (e.key === 'Escape') menu.classList.remove('show'); });
+}
+
+function initNavbarScroll() {
+    let lastY = 0;
+    const nav = document.querySelector('.nav-container');
+    window.addEventListener('scroll', () => {
+        const y = window.scrollY;
+        nav.style.top = y > lastY ? `-${nav.offsetHeight}px` : '0';
+        lastY = Math.max(0, y);
+    });
+}
+
+// ---- Jobs Page UI ----
+
+function initJobsUI() {
     const form = document.getElementById("job-form");
-    let currentPage = parseInt(form.dataset.page, 10);
-    let currentPageSize = parseInt(form.dataset.pageSize, 10);
-    const resultsContainer = document.getElementById("results-container");
-    const loadingIndicator = document.getElementById("loading");
-    const previewPanel = document.getElementById("preview-panel");
-    const closePreviewBtn = previewPanel.querySelector(".close-preview");
-    let selectedJob = null;
-
-    // Add overlay div
+    const results = document.getElementById("results-container");
+    const loading = document.getElementById("loading");
+    const preview = document.getElementById("preview-panel");
+    const closeBtn = preview.querySelector(".close-preview");
     const overlay = document.createElement('div');
     overlay.className = 'content-overlay';
     document.body.appendChild(overlay);
 
-    // Add filter summary functionality
-    function updateFilterSummary(pagination, formData) {
-        const resultsCount = document.getElementById('results-count');
-        const activeFilters = document.getElementById('active-filters');
+    let page = parseInt(form.dataset.page, 10);
+    let pageSize = parseInt(form.dataset.pageSize, 10);
+    let selectedJob = null;
 
-        // Update results count
-        resultsCount.innerHTML = `<i class="fa fa-list"></i> ${pagination.total_jobs} jobs found`;
-
-        // Get active filters
-        const filters = [];
-        const region = formData.get('regions');
-        const category = formData.get('categories');
-        const keyword = formData.get('keyword');
-
-        if (region !== 'ALL') {
-            const regionSelect = document.getElementById('regions');
-            const regionText = regionSelect.options[regionSelect.selectedIndex].text;
-            filters.push(`<span class="filter-tag"><i class="fa fa-map-marker"></i> ${regionText}</span>`);
+    function updateFilters(pagination, formData) {
+        document.getElementById('results-count').innerHTML =
+            `<i class="fa fa-list"></i> ${pagination.total_jobs} jobs found`;
+        const tags = [];
+        if (formData.get('regions') !== 'ALL') {
+            const sel = form.elements.regions;
+            tags.push(`<span class="filter-tag"><i class="fa fa-map-marker"></i> ${sel.selectedOptions[0].text}</span>`);
         }
-
-        if (category !== 'ALL') {
-            const categorySelect = document.getElementById('categories');
-            const categoryText = categorySelect.options[categorySelect.selectedIndex].text;
-            filters.push(`<span class="filter-tag"><i class="fa fa-folder"></i> ${categoryText}</span>`);
+        if (formData.get('categories') !== 'ALL') {
+            const sel = form.elements.categories;
+            tags.push(`<span class="filter-tag"><i class="fa fa-folder"></i> ${sel.selectedOptions[0].text}</span>`);
         }
-
-        if (keyword) {
-            filters.push(`<span class="filter-tag"><i class="fa fa-search"></i> "${keyword}"</span>`);
+        if (formData.get('keyword')) {
+            tags.push(`<span class="filter-tag"><i class="fa fa-search"></i> "${formData.get('keyword')}"</span>`);
         }
-
-        activeFilters.innerHTML = filters.length ? filters.join('') : '';
+        document.getElementById('active-filters').innerHTML = tags.join('');
     }
 
-    function updatePaginationControls(pagination) {
-        const paginationControls = document.getElementById('pagination-controls');
-        const paginationContainer = document.getElementById('pagination');
-
+    function updatePagination(pagination) {
+        const container = document.getElementById('pagination');
+        const controls = document.getElementById('pagination-controls');
         if (pagination.total_pages <= 1) {
-            paginationControls.style.display = 'none';
+            controls.style.display = 'none';
             return;
         }
-
-        paginationControls.style.display = 'flex';
+        controls.style.display = 'flex';
         document.getElementById('page-size').value = pagination.page_size;
-
         let html = '';
-        if (pagination.page > 1) html +=
-            `<button class="page-link" onclick="updatePage(${pagination.page - 1})">
-          <i class="fa fa-chevron-left"></i> Previous
-        </button>`;
+        if (pagination.page > 1) {
+            html += `<button class="page-link" onclick="updatePage(${pagination.page - 1})">
+                   <i class="fa fa-chevron-left"></i> Prev
+                 </button>`;
+        }
         html += `<span class="page-info">Page ${pagination.page} of ${pagination.total_pages}</span>`;
-        if (pagination.page < pagination.total_pages) html +=
-            `<button class="page-link" onclick="updatePage(${pagination.page + 1})">
-          Next <i class="fa fa-chevron-right"></i>
-        </button>`;
-
-        paginationContainer.innerHTML = html;
+        if (pagination.page < pagination.total_pages) {
+            html += `<button class="page-link" onclick="updatePage(${pagination.page + 1})">
+                   Next <i class="fa fa-chevron-right"></i>
+                 </button>`;
+        }
+        container.innerHTML = html;
     }
 
-    function renderJobResults(jobs) {
-        resultsContainer.innerHTML = "";
-
+    function renderResults(jobs) {
+        results.innerHTML = '';
         jobs.forEach(job => {
-            const jobElement = document.createElement('div');
-            jobElement.className = 'job-item';
-            jobElement.innerHTML = `
-                <h3>${job.title}</h3>
-                <div class="job-item-details">
-                    <span class="job-item-detail">
-                        <i class="fa fa-building"></i>
-                        ${job.company}
-                    </span>
-                    <span class="job-item-detail">
-                        <i class="fa fa-map-marker"></i>
-                        ${job.location}
-                    </span>
-                    <span class="job-item-detail">
-                        <i class="fa fa-calendar"></i>
-                        ${job.date_posted}
-                    </span>
-                </div>
-            `;
-
-            jobElement.addEventListener('click', async () => {
-                // Store current job data
-                selectedJob = job;
-                // Show preview for this job
-                showJobPreview(job, jobElement);
-            });
-            resultsContainer.appendChild(jobElement);
+            const el = document.createElement('div');
+            el.className = 'job-item';
+            el.dataset.url = job.url;
+            el.dataset.description = job.description;
+            el.dataset.category = job.category;
+            el.innerHTML = `
+          <h3>${job.title}</h3>
+          <div class="job-item-details">
+            <span class="job-item-detail"><i class="fa fa-building"></i> ${job.company}</span>
+            <span class="job-item-detail"><i class="fa fa-map-marker"></i> ${job.location}</span>
+            <span class="job-item-detail"><i class="fa fa-calendar"></i> ${job.date_posted}</span>
+          </div>
+        `;
+            el.addEventListener('click', () => showPreview(job, el));
+            results.appendChild(el);
         });
     }
 
-    async function fetchJobDetails(url) {
+    async function submitSearch() {
+        loading.style.display = 'block';
+        const fd = new FormData(form);
+        fd.append('page', page);
+        fd.append('page_size', pageSize);
+
         try {
-            const controller = new AbortController();
-            const timeoutId = setTimeout(() => controller.abort(), 15000); // 15 second timeout
-
-            const csrfToken = document
-                .querySelector('meta[name="csrf-token"]')
-                .getAttribute('content');
-
-            const response = await fetch('/get_description', {
+            const res = await fetch('/jobs', {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRFToken': csrfToken,       // Flask-WTF default header name
-                    'X-CSRF-Token': csrfToken       // Just in case
-                },
-                body: JSON.stringify({ url }),
-                signal: controller.signal
+                headers: { 'X-Requested-With': 'XMLHttpRequest' },
+                body: fd
             });
-
-            clearTimeout(timeoutId);
-
-            if (!response.ok) {
-                console.error('Bad status:', response.status, await response.text());
-                throw new Error(`HTTP ${response.status}`);
-            }
-
-            const data = await response.json();
-            if (data.error) {
-                throw new Error(data.error);
-            }
-
-            return {
-                description: data.description,
-                email: data.email,
-                error: null
-            };
-        } catch (error) {
-            console.error('Error fetching job details:', error);
-            let errorMessage = 'Failed to load job description. Please try again later.';
-
-            if (error.name === 'AbortError') {
-                errorMessage = 'Request timed out. Please try again.';
-            }
-
-            return {
-                description: null,
-                email: null,
-                error: errorMessage
-            };
+            const data = await res.json();
+            loading.style.display = 'none';
+            renderResults(data.jobs);
+            updatePagination(data.pagination);
+            updateFilters(data.pagination, fd);
+        } catch (err) {
+            console.error('Search error', err);
+            loading.style.display = 'none';
         }
     }
 
-    async function showJobPreview(job, jobElement) {
-        // Remove selected class from previous selection
-        const previousSelected = document.querySelector('.job-item.selected');
-        if (previousSelected) {
-            previousSelected.classList.remove('selected');
-        }
+    function closePreview() {
+        preview.classList.remove('show');
+        overlay.classList.remove('show');
+        document.querySelector('.job-item.selected')?.classList.remove('selected');
+        selectedJob = null;
+    }
 
-        // Add selected class to current selection
-        jobElement.classList.add('selected');
+    async function showPreview(job, el) {
+        document.querySelector('.job-item.selected')?.classList.remove('selected');
+        el.classList.add('selected');
+        selectedJob = job;
 
-        // Show preview panel and overlay immediately
-        const previewPanel = document.getElementById('preview-panel');
-        const overlay = document.querySelector('.content-overlay');
-        previewPanel.classList.add('show');
-        overlay.classList.add('show');
-
-        // Update preview content with initial job data and skeleton loader
-        const previewContent = document.querySelector('.preview-content');
-        previewContent.innerHTML = `
-            <div class="preview-title">
-                <h1>${job.title}</h1>
-            </div>
-            <div class="company">
-                <i class="fa fa-building"></i>
-                ${job.company}
-            </div>
+        // Show basic info immediately
+        const basicInfo = `
+            <div class="preview-title"><h1>${job.title}</h1></div>
+            <div class="company"><i class="fa fa-building"></i> ${job.company}</div>
             <div class="metadata">
-                <div class="metadata-item">
-                    <i class="fa fa-map-marker"></i>
-                    ${job.location}
-                </div>
-                <div class="metadata-item">
-                    <i class="fa fa-folder"></i>
-                    ${job.category}
-                </div>
-                <div class="metadata-item">
-                    <i class="fa fa-calendar"></i>
-                    ${job.date_posted}
-                </div>
+                <div class="metadata-item"><i class="fa fa-map-marker"></i> ${job.location}</div>
+                <div class="metadata-item"><i class="fa fa-folder"></i> ${job.category}</div>
+                <div class="metadata-item"><i class="fa fa-calendar"></i> ${job.date_posted}</div>
             </div>
             <div class="actions">
                 <a href="${job.url}" target="_blank" class="action-btn primary-btn">
-                    <i class="fa fa-external-link"></i>
-                    View Job
+                    <i class="fa fa-external-link"></i> View Job
                 </a>
-                <button class="action-btn secondary-btn">
-                    <i class="fa fa-bookmark"></i>
-                    Save Job
+                <button class="action-btn secondary-btn save-btn">
+                    <i class="fa fa-bookmark"></i> ${job.favorite ? 'Unsave Job' : 'Save Job'}
                 </button>
             </div>
             <div class="description">
                 ${showSkeletonLoader()}
             </div>
         `;
-
-        // Set up save button functionality
-        setupSaveButton(previewContent, job);
-
-        // Fetch and update description and email
-        const { description, email, error } = await fetchJobDetails(job.url);
-        const descriptionElement = previewContent.querySelector('.description');
-
-        if (error) {
-            descriptionElement.innerHTML = `
-                <div class="error-message" style="color: var(--color-error); padding: 1rem;">
-                    <i class="fa fa-exclamation-circle"></i>
-                    ${error}
-                </div>`;
-        } else {
-            job.description = description;
-            job.email = email ? email.replace(/[\s\n\r]+/g, '').trim() : 'N/A';
-
-            const emailHtml = job.email && job.email !== 'N/A' ?
-                `<div class="email-item" title="Click to copy email"><i class="fa fa-envelope"></i>${job.email}</div>` : '';
-
-            descriptionElement.innerHTML = emailHtml + (description || 'No description available');
-
-            // Add copy functionality to email item
-            const emailItem = descriptionElement.querySelector('.email-item');
-            if (emailItem) {
-                emailItem.addEventListener('click', async () => {
-                    try {
-                        await navigator.clipboard.writeText(job.email);
-                        const originalContent = emailItem.innerHTML;
-                        emailItem.innerHTML = '<i class="fa fa-check"></i> Copied!';
-                        emailItem.classList.add('copied');
-                        setTimeout(() => {
-                            emailItem.innerHTML = originalContent;
-                            emailItem.classList.remove('copied');
-                        }, 2000);
-                    } catch (err) {
-                        console.error('Failed to copy email:', err);
-                    }
-                });
-            }
-        }
-    }
-
-    function setupSaveButton(previewContent, job) {
-        const saveBtn = previewContent.querySelector('.secondary-btn');
-        saveBtn.addEventListener('click', async () => {
-            saveBtn.disabled = true;
-            saveBtn.innerHTML = '<i class="fa fa-spinner fa-spin"></i> Saving...';
-
-            try {
-                const response = await fetch('/save_job', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({ url: job.url }),
-                });
-
-                if (!response.ok) {
-                    throw new Error('Network response was not ok');
-                }
-
-                saveBtn.innerHTML = '<i class="fa fa-check"></i> Saved';
-                saveBtn.style.backgroundColor = 'var(--color-primary)';
-                saveBtn.style.color = 'white';
-            } catch (err) {
-                console.error('Error saving job:', err);
-                saveBtn.innerHTML = '<i class="fa fa-exclamation-triangle"></i> Error';
-                saveBtn.disabled = false;
-            }
-        });
-    }
-
-    function showSkeletonLoader() {
-        return `
-            <div class="skeleton-loading">
-                <div class="skeleton-text"></div>
-                <div class="skeleton-text"></div>
-                <div class="skeleton-text"></div>
-                <div class="skeleton-text"></div>
-                <div class="skeleton-text"></div>
-                <div class="skeleton-text"></div>
-                <div class="skeleton-text"></div>
-                <div class="skeleton-text"></div>
-                <div class="skeleton-text"></div>
-                <div class="skeleton-text"></div>
-            </div>
-        `;
-    }
-
-    // Close preview panel
-    function closePreview() {
-        previewPanel.classList.remove('show');
-        overlay.classList.remove('show');
-        const selectedItem = document.querySelector('.job-item.selected');
-        if (selectedItem) {
-            selectedItem.classList.remove('selected');
-        }
-        selectedJob = null;
-    }
-
-    if (closePreviewBtn) {
-        closePreviewBtn.addEventListener('click', (e) => {
-            e.stopPropagation();
-            closePreview();
-        });
-    }
-
-    // Close preview panel when clicking outside
-    document.addEventListener('click', (event) => {
-        if (previewPanel.classList.contains('show') &&
-            !previewPanel.contains(event.target) &&
-            !event.target.closest('.job-item')) {
-            closePreview();
-        }
-    });
-
-    // Close preview panel when pressing Escape key
-    document.addEventListener('keydown', (event) => {
-        if (event.key === 'Escape' && previewPanel.classList.contains('show')) {
-            closePreview();
-        }
-    });
-
-    // Navbar hide/show on scroll
-    let lastScrollY = 0;
-    const navbar = document.querySelector('.nav-container');
-
-    window.addEventListener("scroll", () => {
-        let scrollTop = window.scrollY || document.documentElement.scrollTop;
-
-        if (scrollTop > lastScrollY) {
-            // Scrolling down
-            navbar.style.top = `-${navbar.offsetHeight}px`;
-        } else {
-            // Scrolling up
-            navbar.style.top = "0";
-        }
-
-        lastScrollY = scrollTop <= 0 ? 0 : scrollTop; // Fix for Safari
-    });
-
-    async function submitSearch() {
-        loadingIndicator.style.display = 'block';
-        const formData = new FormData(form);
-        formData.append('page', currentPage);
-        formData.append('page_size', currentPageSize);
+        preview.querySelector('.preview-content').innerHTML = basicInfo;
+        preview.classList.add('show');
+        overlay.classList.add('show');
 
         try {
-            const res = await fetch('/jobs', {
-                method: 'POST',
-                body: formData,
-                headers: { 'X-Requested-With': 'XMLHttpRequest' }
+            const data = await fetchJobDetails(job.url);
+            const desc = preview.querySelector('.description');
+            desc.innerHTML = data.description;
+
+            // Email copy if present
+            if (data.email && data.email !== 'N/A') {
+                const emailEl = document.createElement('div');
+                emailEl.className = 'email-item';
+                emailEl.title = 'Click to copy email';
+                emailEl.innerHTML = `<i class="fa fa-envelope"></i> ${data.email}`;
+                emailEl.addEventListener('click', async () => {
+                    await navigator.clipboard.writeText(data.email);
+                    const orig = emailEl.innerHTML;
+                    emailEl.innerHTML = '<i class="fa fa-check"></i> Copied!';
+                    setTimeout(() => emailEl.innerHTML = orig, 2000);
+                });
+                desc.prepend(emailEl);
+            }
+
+            // Save/Unsave button
+            const btn = preview.querySelector('.save-btn');
+            btn.addEventListener('click', async () => {
+                btn.disabled = true;
+                btn.innerHTML = `<i class="fa fa-spinner fa-spin"></i> ${job.favorite ? 'Unsaving' : 'Saving'}...`;
+                const url = job.url;
+                const endpoint = job.favorite ? '/unsave_job' : '/save_job';
+                const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+                try {
+                    const resp = await fetch(endpoint, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRFToken': csrfToken,
+                            'X-CSRF-Token': csrfToken
+                        },
+                        body: JSON.stringify({ url })
+                    });
+                    if (!resp.ok) throw new Error('Network error');
+                    job.favorite = !job.favorite;
+                    btn.innerHTML = `<i class="fa fa-bookmark"></i> ${job.favorite ? 'Unsave Job' : 'Save Job'}`;
+                    btn.disabled = false;
+                } catch (err) {
+                    console.error(err);
+                    btn.innerHTML = `<i class="fa fa-exclamation-triangle"></i> Error`;
+                }
             });
-            const data = await res.json();
-            loadingIndicator.style.display = 'none';
-
-            if (data.error) return console.error(data.error);
-
-            renderJobResults(data.jobs);
-            updatePaginationControls(data.pagination);
-            updateFilterSummary(data.pagination, formData);
         } catch (err) {
-            console.error('Fetch error', err);
-            loadingIndicator.style.display = 'none';
+            preview.querySelector('.description').innerHTML = `
+                <div class="error-message">
+                    <i class="fa fa-exclamation-circle"></i>
+                    <p>Unable to load description.</p>
+                </div>
+            `;
         }
     }
 
-    // Expose pagination controls
-    window.updatePage = page => { currentPage = page; submitSearch(); };
-    window.updatePageSize = size => { currentPageSize = parseInt(size, 10); currentPage = 1; submitSearch(); };
+    // Expose pagination control functions to global scope
+    window.updatePage = p => { page = p; submitSearch(); };
+    window.updatePageSize = s => { pageSize = +s; page = 1; submitSearch(); };
 
     // Event bindings
-    form.addEventListener('submit', e => { e.preventDefault(); currentPage = 1; submitSearch(); });
-    closePreviewBtn.addEventListener('click', () => {
-        previewPanel.classList.remove('show');
-        overlay.classList.remove('show');
+    form.addEventListener('submit', e => { e.preventDefault(); page = 1; submitSearch(); });
+    closeBtn.addEventListener('click', e => { e.stopPropagation(); closePreview(); });
+    document.addEventListener('click', e => {
+        if (preview.classList.contains('show') &&
+            !preview.contains(e.target) &&
+            !e.target.closest('.job-item')) {
+            closePreview();
+        }
     });
-});
+    document.addEventListener('keydown', e => {
+        if (e.key === 'Escape' && preview.classList.contains('show')) {
+            closePreview();
+        }
+    });
+}
 
-console.log(`                                                                                
-                             ./%@@@@@@@@@@@@@@%*                                
-                       @@@@@@@@@@@@@@@@@(@@@@@@@@@@@@@*                         
-                  *@@@@@@#  %@@@@    @@@(    @@@@  ,&@@@@@&                     
-               %@@@@@     *@@@(      @@@(      @@@@     ,@@@@@.                 
-            *@@@@#       @@@@        @@@(        @@@(       @@@@@               
-          %@@@@         @@@@         @@@(         @@@#         @@@@             
-        #@@@@@@%,      @@@%          @@@(          @@@#      /&@@@@@@           
-       @@@@  (@@@@@@@@@@@@(,.        @@@(        .,(@@@@@@@@@@@@*  @@@@         
-     ,@@@.          .*@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@*.          %@@@        
-    (@@@             @@@*            @@@(            .   %           .@@@       
-   ,@@@              @@@             @@@(          *@@@@@@@           /@@@      
-   @@@,             (@@&             @@@(     #@@@@@@@@@@@@@           @@@&     
-  (@@@              @@@.                .&@@@@@@@@@@@@@@@@@@@           @@@     
-  @@@#              @@@            /@@@@@@@@@@@@@@@@@@@@@@@@@(          @@@     
-  @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@  @@@@@@@@@@@@@@@@@@@@@@@@@@  @@@@@@@@@@@#    
-  @@@*,,,,,,,,,,,,,,@@@              @@@@@@@@@@@@@@@@@@@@@@@@@&         @@@/    
-  @@@&              @@@                @@@@@@@@@@@@@@@@@@@@@@@@         @@@     
-  .@@@              @@@(             @  %@@@@@@@@@@@@@@@@@@@@@@        *@@@     
-   @@@@             (@@@             @@@  @@@@@@@@@@@@@@@@@@@@@,       @@@      
-    @@@#             @@@             @@@,   @@@@@@@@@@@@@@@@@@@/      @@@#      
-     @@@%            @@@@    *#&&@@@@@@@@@@@  .@@@@@@@@@@@@@@@@,     @@@%       
-      @@@@      .(@@@@@@@@@@@@@@@@@@&@@@&@@@@@&  &@@@@@@@@@@@@@    .@@@*        
-       *@@@@@@@@@@@@,  @@@           @@@(           @@@@@@@@/  / .@@@@          
-         &@@@%         ,@@@          @@@(         .@  %(  *@@@@@@  @.           
-           &@@@@        .@@@         @@@(        /@@@   @@@@@@@@@@              
-             .@@@@@.      @@@&       @@@(       @@@@     @@@@@@@@@@#            
-                .@@@@@@    #@@@#     @@@(     @@@@    (@  @@@@@@@@@@@           
-                    *@@@@@@@%%@@@@,  @@@(  /@@@@(@@@@@@@&  @@@@@@@@@@@          
-                          &@@@@@@@@@@@@@@@@@@@@@@@@/        @@@@@@@@@@@*        
-                                      ...                    %@@@@@@@@@@&       
-                                                              (@@@@@@@@@@@      
-                                                               ,@@@@@   @@@     
-                                                                 @@@@@@@@@      
-                                                                  .%@@#.        
-                                                                                
-`)
+// ---- Favorites Page UI ----
+
+function initFavoritesUI() {
+    const preview = document.getElementById("preview-panel");
+    if (!preview) return;
+    const closeBtn = preview.querySelector(".close-preview");
+    const overlay = document.createElement("div");
+    overlay.className = "content-overlay";
+    document.body.appendChild(overlay);
+
+    document.querySelectorAll(".job-item").forEach(el => {
+        el.addEventListener("click", async () => {
+            document.querySelectorAll(".job-item").forEach(i => i.classList.remove("selected"));
+            el.classList.add("selected");
+
+            const job = {
+                url: el.dataset.url,
+                title: el.querySelector("h3").textContent,
+                company: el.querySelector(".job-item-detail:nth-child(1)").textContent.trim(),
+                location: el.querySelector(".job-item-detail:nth-child(2)").textContent.trim(),
+                date_posted: el.querySelector(".job-item-detail:nth-child(3)").textContent.trim()
+            };
+
+            // Show basic info immediately
+            const basicInfo = `
+                <div class="preview-title"><h1>${job.title}</h1></div>
+                <div class="company"><i class="fa fa-building"></i> ${job.company}</div>
+                <div class="metadata">
+                    <div class="metadata-item"><i class="fa fa-map-marker"></i> ${job.location}</div>
+                    <div class="metadata-item"><i class="fa fa-calendar"></i> ${job.date_posted}</div>
+                </div>
+                <div class="actions">
+                    <a href="${job.url}" target="_blank" class="action-btn primary-btn">
+                        <i class="fa fa-external-link"></i> View Job
+                    </a>
+                    <button class="action-btn secondary-btn unsave-btn">
+                        <i class="fa fa-bookmark"></i> Unsave Job
+                    </button>
+                </div>
+                <div class="description">
+                    ${showSkeletonLoader()}
+                </div>
+            `;
+            preview.querySelector(".preview-content").innerHTML = basicInfo;
+            preview.classList.add("show");
+            overlay.classList.add("show");
+
+            try {
+                const data = await fetchJobDetails(job.url);
+                const desc = preview.querySelector('.description');
+                desc.innerHTML = data.description;
+
+                // Add email box if present
+                if (data.email && data.email !== 'N/A') {
+                    const emailEl = document.createElement('div');
+                    emailEl.className = 'email-item';
+                    emailEl.title = 'Click to copy email';
+                    emailEl.innerHTML = `<i class="fa fa-envelope"></i> ${data.email}`;
+                    emailEl.addEventListener('click', async () => {
+                        await navigator.clipboard.writeText(data.email);
+                        const orig = emailEl.innerHTML;
+                        emailEl.innerHTML = '<i class="fa fa-check"></i> Copied!';
+                        setTimeout(() => emailEl.innerHTML = orig, 2000);
+                    });
+                    desc.prepend(emailEl);
+                }
+
+                // Setup unsave
+                preview.querySelector(".unsave-btn").addEventListener("click", async () => {
+                    const btn = preview.querySelector(".unsave-btn");
+                    btn.disabled = true;
+                    btn.innerHTML = `<i class="fa fa-spinner fa-spin"></i> Unsaving...`;
+                    const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+                    try {
+                        const res = await fetch('/unsave_job', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'X-CSRFToken': csrfToken,
+                                'X-CSRF-Token': csrfToken
+                            },
+                            body: JSON.stringify({ url: job.url })
+                        });
+                        if (!res.ok) throw new Error('Network error');
+                        document.querySelector(`.job-item[data-url="${job.url}"]`).remove();
+                        closeBtn.click();
+                    } catch (err) {
+                        console.error(err);
+                        btn.innerHTML = `<i class="fa fa-exclamation-triangle"></i> Error`;
+                        btn.disabled = false;
+                    }
+                });
+            } catch (err) {
+                preview.querySelector('.description').innerHTML = `
+                    <div class="error-message">
+                        <i class="fa fa-exclamation-circle"></i>
+                        <p>Unable to load details.</p>
+                    </div>
+                `;
+            }
+        });
+    });
+
+    function closeFavPreview() {
+        preview.classList.remove("show");
+        overlay.classList.remove("show");
+        document.querySelector(".job-item.selected")?.classList.remove("selected");
+    }
+    closeBtn.addEventListener("click", closeFavPreview);
+    document.addEventListener('click', e => {
+        if (preview.classList.contains('show') &&
+            !preview.contains(e.target) &&
+            !e.target.closest('.job-item')) {
+            closeFavPreview();
+        }
+    });
+    document.addEventListener('keydown', e => {
+        if (e.key === 'Escape' && preview.classList.contains('show')) {
+            closeFavPreview();
+        }
+    });
+}
+
+// ---- Initialize All ----
+
+document.addEventListener("DOMContentLoaded", () => {
+    initThemeToggle();
+    initFlashTimers();
+    initProfileDropdown();
+    initNavbarScroll();
+
+    if (document.getElementById("job-form")) {
+        initJobsUI();
+    }
+    if (window.location.pathname === "/favorites") {
+        initFavoritesUI();
+    }
+});

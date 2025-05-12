@@ -1,13 +1,16 @@
 from application import app, db
 from flask import render_template, request, redirect, url_for, flash, jsonify
 from application.forms import RegisterForm, LoginForm, JobSearchForm
-from application.models import User, Job
+from application.models import User, Job, SavedJob
 from flask_login import login_user, logout_user
 from application.scrape import get_jobs
 from application import jobs_ge
 from flask_login import current_user, login_required
 import re
 from html import escape
+from datetime import datetime
+import json
+from flask import make_response
 
 
 @app.route("/healthz")
@@ -111,9 +114,13 @@ def jobs():
         for job in paginated_jobs:
             try:
                 location_display = (
-                    LOC_BY_KEY[job.location_key].display
-                    if job.location_key and job.location_key != "ALL"
-                    else "All Locations"
+                    job.location
+                    if job.location and job.location != "All Locations"
+                    else (
+                        LOC_BY_KEY[job.location_key].display
+                        if job.location_key and job.location_key != "ALL"
+                        else "All Locations"
+                    )
                 )
                 category_display = (
                     CAT_BY_KEY[job.category_key].display
@@ -252,9 +259,16 @@ def save_job():
     if not job:
         return jsonify({"error": "Job not found"}), 404
 
-    # Mark as favorite and record owner
-    job.favorite = True
-    job.owner_user_id = current_user.id
+    # Check if job is already saved
+    existing_save = SavedJob.query.filter_by(
+        user_id=current_user.id, job_id=job.id
+    ).first()
+    if existing_save:
+        return jsonify({"success": True, "message": "Job already saved"})
+
+    # Create new SavedJob entry
+    saved_job = SavedJob(user_id=current_user.id, job_id=job.id)
+    db.session.add(saved_job)
     db.session.commit()
 
     return jsonify({"success": True})
@@ -271,10 +285,8 @@ def favorites():
     if page_size not in [10, 20, 30, 50]:
         page_size = 10
 
-    # Get total count of user's favorite jobs
-    total_jobs = Job.query.filter_by(
-        owner_user_id=current_user.id, favorite=True
-    ).count()
+    # Get total count of user's favorite jobs using the SavedJob relationship
+    total_jobs = SavedJob.query.filter_by(user_id=current_user.id).count()
 
     # Calculate total pages
     total_pages = (total_jobs + page_size - 1) // page_size
@@ -282,14 +294,17 @@ def favorites():
     # Ensure page is within valid range
     page = max(1, min(page, total_pages)) if total_pages > 0 else 1
 
-    # Get paginated jobs
-    jobs = (
-        Job.query.filter_by(owner_user_id=current_user.id, favorite=True)
-        .order_by(Job.date_populated.desc())
+    # Get paginated jobs using the SavedJob relationship
+    saved_jobs = (
+        SavedJob.query.filter_by(user_id=current_user.id)
+        .order_by(SavedJob.saved_at.desc())
         .offset((page - 1) * page_size)
         .limit(page_size)
         .all()
     )
+
+    # Get the actual Job objects from the SavedJob relationships
+    jobs = [saved_job.job for saved_job in saved_jobs]
 
     return render_template(
         "favorites.html",
@@ -303,9 +318,164 @@ def favorites():
 @app.route("/unsave_job", methods=["POST"])
 @login_required
 def unsave_job():
-    url = request.get_json().get("url")
-    job = Job.query.filter_by(url=url, owner_user_id=current_user.id).first_or_404()
-    job.favorite = False
-    job.owner_user_id = None
-    db.session.commit()
+    data = request.get_json()
+    url = data.get("url")
+    if not url:
+        return jsonify({"error": "No URL provided"}), 400
+
+    job = Job.query.filter_by(url=url).first()
+    if not job:
+        return jsonify({"error": "Job not found"}), 404
+
+    # Find and delete the SavedJob entry
+    saved_job = SavedJob.query.filter_by(user_id=current_user.id, job_id=job.id).first()
+    if saved_job:
+        db.session.delete(saved_job)
+        db.session.commit()
+
     return jsonify({"success": True})
+
+
+@app.route("/about")
+def about():
+    return render_template("about.html")
+
+
+@app.route("/profile")
+@login_required
+def profile():
+    # Get user statistics
+    saved_jobs_count = len(current_user.saved_jobs)
+    viewed_jobs_count = len(current_user.viewed_jobs)
+    days_active = (datetime.now() - current_user.created_at).days
+
+    return render_template(
+        "profile.html",
+        saved_jobs_count=saved_jobs_count,
+        viewed_jobs_count=viewed_jobs_count,
+        days_active=days_active,
+    )
+
+
+@app.route("/settings")
+@login_required
+def settings():
+    # Get current user preferences
+    current_theme = current_user.theme or "system"
+    current_font_size = current_user.font_size or 14
+    current_location = current_user.default_location
+    jobs_per_page = current_user.jobs_per_page or 20
+    sort_order = current_user.sort_order or "newest"
+    profile_visible = current_user.profile_visible
+    activity_visible = current_user.activity_visible
+    data_collection_enabled = current_user.data_collection_enabled
+
+    # Get available locations
+    locations = Location.query.all()
+
+    return render_template(
+        "settings.html",
+        current_theme=current_theme,
+        current_font_size=current_font_size,
+        locations=locations,
+        current_location=current_location,
+        jobs_per_page=jobs_per_page,
+        sort_order=sort_order,
+        profile_visible=profile_visible,
+        activity_visible=activity_visible,
+        data_collection_enabled=data_collection_enabled,
+    )
+
+
+@app.route("/update_appearance", methods=["POST"])
+@login_required
+def update_appearance():
+    theme = request.form.get("theme")
+    font_size = int(request.form.get("font_size"))
+
+    current_user.theme = theme
+    current_user.font_size = font_size
+    db.session.commit()
+
+    flash("Appearance settings updated successfully!", "success")
+    return redirect(url_for("settings"))
+
+
+@app.route("/update_search_preferences", methods=["POST"])
+@login_required
+def update_search_preferences():
+    default_location = request.form.get("default_location")
+    jobs_per_page = int(request.form.get("jobs_per_page"))
+    sort_order = request.form.get("sort_order")
+
+    current_user.default_location = default_location
+    current_user.jobs_per_page = jobs_per_page
+    current_user.sort_order = sort_order
+    db.session.commit()
+
+    flash("Search preferences updated successfully!", "success")
+    return redirect(url_for("settings"))
+
+
+@app.route("/update_privacy", methods=["POST"])
+@login_required
+def update_privacy():
+    profile_visible = "profile_visibility" in request.form
+    activity_visible = "activity_visibility" in request.form
+    data_collection = "data_collection" in request.form
+
+    current_user.profile_visible = profile_visible
+    current_user.activity_visible = activity_visible
+    current_user.data_collection_enabled = data_collection
+    db.session.commit()
+
+    flash("Privacy settings updated successfully!", "success")
+    return redirect(url_for("settings"))
+
+
+@app.route("/delete_account")
+@login_required
+def delete_account():
+    # Delete user's data
+    SavedJob.query.filter_by(user_id=current_user.id).delete()
+    ViewedJob.query.filter_by(user_id=current_user.id).delete()
+
+    # Delete the user
+    db.session.delete(current_user)
+    db.session.commit()
+
+    logout_user()
+    flash("Your account has been deleted successfully.", "success")
+    return redirect(url_for("home_page"))
+
+
+@app.route("/export_data")
+@login_required
+def export_data():
+    # Create a dictionary with user's data
+    user_data = {
+        "username": current_user.username,
+        "email": current_user.email_address,
+        "created_at": current_user.created_at.isoformat(),
+        "saved_jobs": [job.to_dict() for job in current_user.saved_jobs],
+        "viewed_jobs": [job.to_dict() for job in current_user.viewed_jobs],
+        "preferences": {
+            "theme": current_user.theme,
+            "font_size": current_user.font_size,
+            "default_location": current_user.default_location,
+            "jobs_per_page": current_user.jobs_per_page,
+            "sort_order": current_user.sort_order,
+        },
+    }
+
+    # Convert to JSON
+    json_data = json.dumps(user_data, indent=2)
+
+    # Create response with JSON file
+    response = make_response(json_data)
+    response.headers["Content-Type"] = "application/json"
+    response.headers["Content-Disposition"] = (
+        f"attachment; filename=scrapescout_data_{current_user.username}.json"
+    )
+
+    return response
