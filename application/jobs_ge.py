@@ -58,51 +58,85 @@ def get_fully_loaded_html(url: str) -> str:
 
 
 def extractDescription(job_URL):
-    job_page = requests.get(job_URL)
-    job_soup = BeautifulSoup(job_page.text, "html.parser")
+    headers = {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36",
+        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
+        "Accept-Language": "en-US,en;q=0.5",
+        "Connection": "keep-alive",
+        "Upgrade-Insecure-Requests": "1",
+    }
 
-    # First check for English version link
-    english_link = job_soup.find("a", text="ინგლისურ ენაზე")
-    if english_link and english_link.get("href"):
-        # Construct full URL for English version
-        english_url = "https://www.jobs.ge" + english_link["href"]
-        try:
-            english_page = requests.get(english_url)
-            english_soup = BeautifulSoup(english_page.text, "html.parser")
-            description = english_soup.find(
-                "td", attrs={"style": "padding-top:30px; padding-bottom:40px;"}
-            )
-            if description:
-                # Process description to preserve links
-                for link in description.find_all("a"):
-                    # For mailto links, keep the email address but remove the mailto: part and query parameters
-                    if link.get("href", "").startswith("mailto:"):
-                        email = link.get("href")[7:]  # Remove 'mailto:' prefix
-                        email = email.split("?")[0]  # Remove any query parameters
-                        link.replace_with(email)
-                    else:
-                        # Replace other links with text and URL in a readable format
-                        link.replace_with(f"{link.text} {link.get('href', '')}")
-                return description
-        except Exception as e:
-            print(f"Error fetching English description: {e}")
+    try:
+        print(f"Fetching job description from: {job_URL}")
+        job_page = requests.get(job_URL, timeout=10, headers=headers)
+        job_page.raise_for_status()  # Raise an exception for bad status codes
+        job_soup = BeautifulSoup(job_page.text, "html.parser")
 
-    # Fall back to original description if English version not available or failed
-    description = job_soup.find(
-        "td", attrs={"style": "padding-top:30px; padding-bottom:40px;"}
-    )
-    if description:
-        # Process description to preserve links.
-        for link in description.find_all("a"):
-            # For mailto links, keep the email address but remove the mailto: part and query parameters
-            if link.get("href", "").startswith("mailto:"):
-                email = link.get("href")[7:]  # Remove 'mailto:' prefix
-                email = email.split("?")[0]  # Remove any query parameters
-                link.replace_with(email)
-            else:
-                # Replace other links with text and URL in a readable format
-                link.replace_with(f"{link.text} {link.get('href', '')}")
-    return description if description else "N/A"
+        # First check for English version link
+        english_link = job_soup.find("a", text="ინგლისურ ენაზე")
+        if english_link and english_link.get("href"):
+            # Construct full URL for English version
+            english_url = "https://www.jobs.ge" + english_link["href"]
+            try:
+                print(f"Found English version, fetching from: {english_url}")
+                english_page = requests.get(english_url, timeout=10, headers=headers)
+                english_page.raise_for_status()
+                english_soup = BeautifulSoup(english_page.text, "html.parser")
+                description = english_soup.find(
+                    "td", attrs={"style": "padding-top:30px; padding-bottom:40px;"}
+                )
+                if description:
+                    print("Successfully found English description")
+                    # Process description to preserve links
+                    for link in description.find_all("a"):
+                        # For mailto links, keep the email address but remove the mailto: part and query parameters
+                        if link.get("href", "").startswith("mailto:"):
+                            email = link.get("href")[7:]  # Remove 'mailto:' prefix
+                            email = email.split("?")[0]  # Remove any query parameters
+                            link.replace_with(email)
+                        else:
+                            # Replace other links with text and URL in a readable format
+                            link.replace_with(f"{link.text} {link.get('href', '')}")
+                    return description
+            except Exception as e:
+                print(f"Error fetching English description: {str(e)}")
+                print(
+                    f"Response status code: {getattr(e.response, 'status_code', 'N/A')}"
+                )
+                print(f"Response content: {getattr(e.response, 'content', 'N/A')}")
+
+        # Fall back to original description if English version not available or failed
+        print("Falling back to original description")
+        description = job_soup.find(
+            "td", attrs={"style": "padding-top:30px; padding-bottom:40px;"}
+        )
+        if description:
+            print("Successfully found original description")
+            # Process description to preserve links.
+            for link in description.find_all("a"):
+                # For mailto links, keep the email address but remove the mailto: part and query parameters
+                if link.get("href", "").startswith("mailto:"):
+                    email = link.get("href")[7:]  # Remove 'mailto:' prefix
+                    email = email.split("?")[0]  # Remove any query parameters
+                    link.replace_with(email)
+                else:
+                    # Replace other links with text and URL in a readable format
+                    link.replace_with(f"{link.text} {link.get('href', '')}")
+            return description
+        else:
+            print("No description found in original page")
+            return "N/A"
+    except requests.exceptions.Timeout:
+        print(f"Timeout while fetching job description from: {job_URL}")
+        return "N/A"
+    except requests.exceptions.RequestException as e:
+        print(f"Error fetching job description: {str(e)}")
+        print(f"Response status code: {getattr(e.response, 'status_code', 'N/A')}")
+        print(f"Response content: {getattr(e.response, 'content', 'N/A')}")
+        return "N/A"
+    except Exception as e:
+        print(f"Unexpected error while fetching job description: {str(e)}")
+        return "N/A"
 
 
 def extractEmail(description):
