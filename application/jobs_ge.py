@@ -92,7 +92,7 @@ def extractDescription(job_URL):
         "td", attrs={"style": "padding-top:30px; padding-bottom:40px;"}
     )
     if description:
-        # Process description to preserve links
+        # Process description to preserve links.
         for link in description.find_all("a"):
             # For mailto links, keep the email address but remove the mailto: part and query parameters
             if link.get("href", "").startswith("mailto:"):
