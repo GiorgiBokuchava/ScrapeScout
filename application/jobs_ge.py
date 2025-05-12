@@ -67,9 +67,8 @@ def extractDescription(job_URL):
     }
 
     try:
-        print(f"Fetching job description from: {job_URL}")
         job_page = requests.get(job_URL, timeout=10, headers=headers)
-        job_page.raise_for_status()  # Raise an exception for bad status codes
+        job_page.raise_for_status()
         job_soup = BeautifulSoup(job_page.text, "html.parser")
 
         # First check for English version link
@@ -78,7 +77,6 @@ def extractDescription(job_URL):
             # Construct full URL for English version
             english_url = "https://www.jobs.ge" + english_link["href"]
             try:
-                print(f"Found English version, fetching from: {english_url}")
                 english_page = requests.get(english_url, timeout=10, headers=headers)
                 english_page.raise_for_status()
                 english_soup = BeautifulSoup(english_page.text, "html.parser")
@@ -86,7 +84,6 @@ def extractDescription(job_URL):
                     "td", attrs={"style": "padding-top:30px; padding-bottom:40px;"}
                 )
                 if description:
-                    print("Successfully found English description")
                     # Process description to preserve links
                     for link in description.find_all("a"):
                         # For mailto links, keep the email address but remove the mailto: part and query parameters
@@ -99,20 +96,14 @@ def extractDescription(job_URL):
                             link.replace_with(f"{link.text} {link.get('href', '')}")
                     return description
             except Exception as e:
-                print(f"Error fetching English description: {str(e)}")
-                print(
-                    f"Response status code: {getattr(e.response, 'status_code', 'N/A')}"
-                )
-                print(f"Response content: {getattr(e.response, 'content', 'N/A')}")
+                pass
 
         # Fall back to original description if English version not available or failed
-        print("Falling back to original description")
         description = job_soup.find(
             "td", attrs={"style": "padding-top:30px; padding-bottom:40px;"}
         )
         if description:
-            print("Successfully found original description")
-            # Process description to preserve links.
+            # Process description to preserve links
             for link in description.find_all("a"):
                 # For mailto links, keep the email address but remove the mailto: part and query parameters
                 if link.get("href", "").startswith("mailto:"):
@@ -124,18 +115,12 @@ def extractDescription(job_URL):
                     link.replace_with(f"{link.text} {link.get('href', '')}")
             return description
         else:
-            print("No description found in original page")
             return "N/A"
     except requests.exceptions.Timeout:
-        print(f"Timeout while fetching job description from: {job_URL}")
         return "N/A"
     except requests.exceptions.RequestException as e:
-        print(f"Error fetching job description: {str(e)}")
-        print(f"Response status code: {getattr(e.response, 'status_code', 'N/A')}")
-        print(f"Response content: {getattr(e.response, 'content', 'N/A')}")
         return "N/A"
     except Exception as e:
-        print(f"Unexpected error while fetching job description: {str(e)}")
         return "N/A"
 
 
