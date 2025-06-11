@@ -1,8 +1,8 @@
-"""initial
+"""initial schema
 
-Revision ID: 5df869f8deb3
+Revision ID: 2ae8f8b50de1
 Revises: 
-Create Date: 2025-06-10 21:53:43.011062
+Create Date: 2025-06-12 01:29:05.448073
 
 """
 from alembic import op
@@ -10,7 +10,7 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision = '5df869f8deb3'
+revision = '2ae8f8b50de1'
 down_revision = None
 branch_labels = None
 depends_on = None
@@ -35,10 +35,8 @@ def upgrade():
     sa.PrimaryKeyConstraint('id'),
     sa.UniqueConstraint('url')
     )
-    with op.batch_alter_table('job', schema=None) as batch_op:
-        batch_op.create_index(batch_op.f('ix_job_category_key'), ['category_key'], unique=False)
-        batch_op.create_index(batch_op.f('ix_job_location_key'), ['location_key'], unique=False)
-
+    op.create_index(op.f('ix_job_category_key'), 'job', ['category_key'], unique=False)
+    op.create_index(op.f('ix_job_location_key'), 'job', ['location_key'], unique=False)
     op.create_table('user',
     sa.Column('id', sa.Integer(), nullable=False),
     sa.Column('username', sa.String(length=30), nullable=False),
@@ -75,9 +73,7 @@ def downgrade():
     op.drop_table('viewed_job')
     op.drop_table('saved_job')
     op.drop_table('user')
-    with op.batch_alter_table('job', schema=None) as batch_op:
-        batch_op.drop_index(batch_op.f('ix_job_location_key'))
-        batch_op.drop_index(batch_op.f('ix_job_category_key'))
-
+    op.drop_index(op.f('ix_job_location_key'), table_name='job')
+    op.drop_index(op.f('ix_job_category_key'), table_name='job')
     op.drop_table('job')
     # ### end Alembic commands ###
