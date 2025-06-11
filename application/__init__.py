@@ -15,18 +15,16 @@ app = Flask(
 )
 
 # ——————————————————————————————
-# Pull the Postgres URL from the env and error if missing
+# Enforce DATABASE_URL from environment (no SQLite fallback)
 database_url = os.getenv("DATABASE_URL")
 if not database_url:
     raise RuntimeError("DATABASE_URL environment variable not set")
 app.config["SQLALCHEMY_DATABASE_URI"] = database_url
-
-# Turn off track modifications (recommended)
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
+# ——————————————————————————————
 
 # Secret Key
 app.config["SECRET_KEY"] = os.getenv("SCRAPE_SCOUT_SECRET_KEY", "default_secret")
-# ——————————————————————————————
 
 # 2. Initialize extensions
 db = SQLAlchemy(app)

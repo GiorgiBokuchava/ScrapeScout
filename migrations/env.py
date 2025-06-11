@@ -10,7 +10,7 @@ from sqlalchemy import engine_from_config, pool
 config = context.config
 
 # ——————————————————————————————
-# Override the sqlalchemy.url setting in alembic.ini
+# Override the sqlalchemy.url from alembic.ini with the env var
 database_url = os.getenv("DATABASE_URL")
 if not database_url:
     raise RuntimeError("DATABASE_URL must be set for migrations")
@@ -26,7 +26,7 @@ from application import db
 target_metadata = db.metadata
 
 def run_migrations_offline():
-    """Run migrations in 'offline' mode."""
+    """Run migrations in 'offline' mode (emit SQL only)."""
     url = config.get_main_option("sqlalchemy.url")
     context.configure(
         url=url,
@@ -34,29 +34,24 @@ def run_migrations_offline():
         literal_binds=True,
         dialect_opts={"paramstyle": "named"},
     )
-
     with context.begin_transaction():
         context.run_migrations()
 
-
 def run_migrations_online():
-    """Run migrations in 'online' mode."""
+    """Run migrations in 'online' mode (apply to real DB)."""
     connectable = engine_from_config(
         config.get_section(config.config_ini_section),
         prefix="sqlalchemy.",
         poolclass=pool.NullPool,
     )
-
     with connectable.connect() as connection:
         context.configure(
             connection=connection,
             target_metadata=target_metadata,
-            compare_type=True,  # helps detect column type changes
+            compare_type=True,  # detect column type changes
         )
-
         with context.begin_transaction():
             context.run_migrations()
-
 
 if context.is_offline_mode():
     run_migrations_offline()
