@@ -6,13 +6,17 @@ services:
     plan: free
     branch: master
     buildCommand: pip install -r requirements.txt
-    startCommand: gunicorn -b 0.0.0.0:8000 run:app
+
     preDeployCommand: flask db upgrade
+    startCommand: gunicorn -b 0.0.0.0:8000 run:app
+
     envVars:
       - key: FLASK_ENV
         value: production
+      - key: FLASK_APP
+        value: run.py
       - key: PORT
-        value: 8000
+        value: "8000"
       - key: DATABASE_URL
         fromDatabase:
           name: scrapescout-db

@@ -35,16 +35,16 @@ WORKDIR /app
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# ---------- application code -------------------------------------------------
+# copy code, but ignore .env so we don’t bake secrets into the image
 COPY . .
+# if you have a .dockerignore, ensure it contains “.env”
 
 ENV PYTHONUNBUFFERED=1 \
-    CHROME_BIN=/usr/bin/google-chrome \
-    CHROMEDRIVER_PATH=/usr/local/bin/chromedriver \
-    FLASK_APP=run:app \
+    FLASK_APP=run.py \
     FLASK_ENV=production \
     PORT=8000
 
 EXPOSE ${PORT}
 
+# Run migrations, then launch via Gunicorn
 CMD ["sh", "-c", "flask db upgrade && exec gunicorn -b 0.0.0.0:${PORT} run:app"]
