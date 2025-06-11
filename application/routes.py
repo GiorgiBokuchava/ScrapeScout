@@ -88,11 +88,11 @@ def jobs():
 
     # Get pagination parameters from query string
     page = request.values.get("page", 1, type=int)
-    page_size = request.values.get("page_size", 10, type=int)
+    page_size = request.values.get("page_size", 20, type=int)
 
     # Validate page size
-    if page_size not in [10, 20, 30, 50]:
-        page_size = 10
+    if page_size not in [20, 50, 100]:
+        page_size = 20
 
     if request.method == "GET":
         return render_template("jobs.html", form=form, page=page, page_size=page_size)

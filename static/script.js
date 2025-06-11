@@ -129,8 +129,8 @@ function initJobsUI() {
     overlay.className = 'content-overlay';
     document.body.appendChild(overlay);
 
-    let page = parseInt(form.dataset.page, 10);
-    let pageSize = parseInt(form.dataset.pageSize, 10);
+    let page = parseInt(form.dataset.page, 20);
+    let pageSize = parseInt(form.dataset.pageSize, 20);
     let selectedJob = null;
 
     function updateFilters(pagination, formData) {

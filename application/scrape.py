@@ -14,7 +14,7 @@ from application import jobs_ge
 def _scrape_locations() -> dict[str, Job]:
     results, total = {}, 0
     for loc in LOCATIONS:
-        if loc.key in ("", "ALL"):  # skip “All Locations”
+        if loc.key in ("", "ALL"):  # skip "All Locations"
             continue
         current_app.logger.info("Scraping by location: %s", loc.display)
         site_list = scrape_jobs_ge(loc.key, "ALL", "")
@@ -63,17 +63,21 @@ def index_all_jobs() -> None:
     # Jobs found in both passes -> merge location + category
     for url in common_urls - existing_urls:
         job = category_jobs[url]
+        # Preserve the location key and display from the location job
         job.location = location_jobs[url].location
+        job.location_key = location_jobs[url].location_key
         to_add.append(job)
 
     # Category-only jobs -> keep category, set location to ""
     for url in category_only_urls - existing_urls:
         job = category_jobs[url]
+        job.location_key = "ALL"  # Explicitly set to ALL for category-only jobs
         to_add.append(job)
 
     # Location-only jobs -> keep location, set category to ""
     for url in location_only_urls - existing_urls:
         job = location_jobs[url]
+        job.category_key = "ALL"  # Explicitly set to ALL for location-only jobs
         to_add.append(job)
 
     # Bulk-insert—one round-trip, same as before
@@ -115,8 +119,24 @@ def get_jobs(
     # Apply sorting
     if sort_by:
         field, direction = sort_by.rsplit("_", 1)
-        order = db.desc(field) if direction == "desc" else db.asc(field)
-        query = query.order_by(order)
+        if field == "date_posted":
+            # For date sorting, we need to handle the DD-MM-YYYY format
+            from sqlalchemy import func, cast, Integer
+            
+            # Split the date string and cast components to integers
+            day = cast(func.split_part(Job.date_posted, '-', 1), Integer)
+            month = cast(func.split_part(Job.date_posted, '-', 2), Integer)
+            year = cast(func.split_part(Job.date_posted, '-', 3), Integer)
+            
+            # Order by year, then month, then day
+            if direction == "desc":
+                query = query.order_by(year.desc(), month.desc(), day.desc())
+            else:
+                query = query.order_by(year.asc(), month.asc(), day.asc())
+        else:
+            # For other fields, use direct sorting
+            order = db.desc(field) if direction == "desc" else db.asc(field)
+            query = query.order_by(order)
 
     try:
         return query.all()

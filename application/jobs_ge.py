@@ -3,13 +3,19 @@ import requests
 import re
 from application import db
 from application.models import Job
-from selenium import webdriver
-from selenium.webdriver.chrome.options import Options
-import time
 from datetime import datetime, timedelta
 from pytz import utc
 from application.location import loc_to_site_code, site_code_to_loc, LOC_BY_KEY
 from application.category import cat_to_site_code, site_code_to_cat, CAT_BY_KEY
+import logging
+
+# Configure logging
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(levelname)s - %(message)s',
+    datefmt='%Y-%m-%d %H:%M:%S'
+)
+logger = logging.getLogger(__name__)
 
 # Georgian month names mapping
 GEORGIAN_MONTHS = {
@@ -29,32 +35,23 @@ GEORGIAN_MONTHS = {
 
 job_keyword = ""  # &q=KEYWORD
 
-
-def build_driver() -> webdriver.Chrome:
-    chrome_opts = Options()
-    chrome_opts.add_argument("--headless=new")
-    chrome_opts.add_argument("--no-sandbox")
-    chrome_opts.add_argument("--disable-dev-shm-usage")
-    return webdriver.Chrome(options=chrome_opts)
-
+# Common headers for all requests
+HEADERS = {
+    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36",
+    "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
+    "Accept-Language": "en-US,en;q=0.5",
+    "Connection": "keep-alive",
+    "Upgrade-Insecure-Requests": "1",
+}
 
 def get_fully_loaded_html(url: str) -> str:
-    driver = build_driver()
-    driver.get(url)
-    time.sleep(1)
-
-    last_h = driver.execute_script("return document.body.scrollHeight")
-    while True:
-        driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
-        time.sleep(2)
-        new_h = driver.execute_script("return document.body.scrollHeight")
-        if new_h == last_h:
-            break
-        last_h = new_h
-
-    html = driver.page_source
-    driver.quit()
-    return html
+    try:
+        response = requests.get(url, headers=HEADERS, timeout=10)
+        response.raise_for_status()
+        return response.text
+    except requests.exceptions.RequestException as e:
+        logger.error(f"Error fetching URL {url}: {e}")
+        return ""
 
 
 def extractDescription(job_URL):
@@ -137,21 +134,56 @@ def parse_jobs_ge_date(date_str: str) -> datetime:
     if not date_str or date_str == "N/A":
         return datetime.now(utc)
 
-    # Handle "today" and "yesterday"
-    if date_str == "დღეს":
-        return datetime.now(utc)
-    if date_str == "გუშინ":
-        return datetime.now(utc) - timedelta(days=1)
-
     # Parse regular date format (e.g., "30 აპრილი")
     try:
         day, month = date_str.split()
         day = int(day)
         month = GEORGIAN_MONTHS[month]
-        year = datetime.now(utc).year
-        return datetime(year, month, day, tzinfo=utc)
+        current_date = datetime.now(utc)
+        year = current_date.year
+
+        # If the month is greater than current month, use previous year
+        if month > current_date.month:
+            year -= 1
+
+        return datetime(day=day, month=month, year=year, tzinfo=utc)
     except (ValueError, KeyError):
         return datetime.now(utc)
+
+
+def get_paginated_html(base_url: str) -> str:
+    """
+    Gets HTML from all pages by checking for duplicates.
+    Starts from page 2 since page 1 is already fetched by get_fully_loaded_html.
+    Returns combined HTML from all unique pages.
+    """
+    combined_html = ""
+    page_num = 2
+    last_html = ""
+    
+    while True:
+        paginated_url = f"{base_url}&page={page_num}&for_scroll=yes"
+        logger.info(f"Fetching page {page_num}...")
+        
+        try:
+            response = requests.get(paginated_url, headers=HEADERS, timeout=10)
+            response.raise_for_status()
+            current_html = response.text
+            
+            # If we get the same HTML as last time, we've reached the end
+            if current_html == last_html:
+                logger.info(f"Reached end at page {page_num-1}")
+                break
+                
+            combined_html += current_html
+            last_html = current_html
+            page_num += 1
+            
+        except requests.exceptions.RequestException as e:
+            logger.error(f"Error fetching page {page_num}: {e}")
+            break
+    
+    return combined_html
 
 
 def scrape_jobs_ge(
@@ -176,23 +208,34 @@ def scrape_jobs_ge(
 
     # Verify we got valid IDs if not "ALL"
     if chosen_job_location != "ALL" and site_location_id is None:
-        print(f"Warning: Invalid location key {chosen_job_location}")
+        logger.warning(f"Invalid location key {chosen_job_location}")
         site_location_id = ""
     if chosen_job_category != "ALL" and site_category_id is None:
-        print(f"Warning: Invalid category key {chosen_job_category}")
+        logger.warning(f"Invalid category key {chosen_job_category}")
         site_category_id = ""
 
-    # Build URL with validated IDs
-    url = f"https://jobs.ge/?page=1&q={chosen_job_keyword}"
+    # Build base URL with validated IDs
+    base_url = f"https://jobs.ge/?q={chosen_job_keyword}"
     if site_category_id not in (None, ""):
-        url += f"&cid={site_category_id}"
+        base_url += f"&cid={site_category_id}"
     if site_location_id not in (None, ""):
-        url += f"&lid={site_location_id}&jid="
+        base_url += f"&lid={site_location_id}&jid=0&in_title=0&has_salary=0&is_ge=0"
 
-    print(f"Scraping URL: {url}")  # Debug log
+    logger.info(f"Starting scrape with URL: {base_url}")
 
-    html = get_fully_loaded_html(url)
-    soup = BeautifulSoup(html, "html.parser")
+    # Get first page HTML
+    first_page_html = get_fully_loaded_html(base_url)
+    if not first_page_html:
+        logger.error("Failed to fetch first page")
+        return []
+
+    # Get remaining pages HTML
+    remaining_pages_html = get_paginated_html(base_url)
+    
+    # Combine all HTML
+    full_html = first_page_html + remaining_pages_html
+    
+    soup = BeautifulSoup(full_html, "html.parser")
 
     jobs: list[Job] = []
     for tr in soup.find_all("tr"):
@@ -215,7 +258,7 @@ def scrape_jobs_ge(
 
             # Parse the date
             parsed_date = parse_jobs_ge_date(posted)
-            formatted_date = parsed_date.strftime("%Y-%m-%d")
+            formatted_date = parsed_date.strftime("%d-%m-%Y")
 
             # Look up display names and ensure we have valid objects
             loc_obj = None
@@ -249,11 +292,25 @@ def scrape_jobs_ge(
                 description="...",
             )
             jobs.append(new_job)
+            
+            # Log each job's details
+            logger.info(f"""
+Found Job:
+---------------
+Title: {new_job.title}
+Company: {new_job.company}
+URL: {new_job.url}
+Date Posted: {new_job.date_posted}
+Location: {new_job.location}
+Location Key: {new_job.location_key}
+Category: {new_job.category}
+Category Key: {new_job.category_key}
+---------------
+""")
+            
         except Exception as e:
-            print("scrape error:", e)
+            logger.error(f"Error processing job row: {e}")
             continue
 
-    print(
-        f"Found {len(jobs)} jobs for location: {chosen_job_location}, category: {chosen_job_category}"
-    )
+    logger.info(f"Scraping complete. Found {len(jobs)} jobs for location: {chosen_job_location}, category: {chosen_job_category}")
     return jobs

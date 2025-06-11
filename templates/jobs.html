@@ -58,10 +58,9 @@
         <div class="page-size-selector">
             <label for="page-size">Jobs per page:</label>
             <select id="page-size" onchange="updatePageSize(this.value)">
-                <option value="10" {% if page_size==10 %}selected{% endif %}>10</option>
-                <option value="20" {% if page_size==20 %}selected{% endif %}>20</option>
-                <option value="30" {% if page_size==30 %}selected{% endif %}>30</option>
+                <option value="20" default {% if page_size!=50 and page_size!=100 %}selected{% endif %}>20</option>
                 <option value="50" {% if page_size==50 %}selected{% endif %}>50</option>
+                <option value="100" {% if page_size==100 %}selected{% endif %}>100</option>
             </select>
         </div>
 

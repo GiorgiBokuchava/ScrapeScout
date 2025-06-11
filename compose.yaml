@@ -1,3 +1,5 @@
+version: '3.9'
+
 services:
   db:
     image: postgres:16
@@ -12,7 +14,8 @@ services:
       test: ["CMD-SHELL", "pg_isready -U scrape -d scrapedb"]
       interval: 5s
       retries: 5
-    ports: ["5432:5432"]
+    ports:
+      - "5432:5432"
 
   app:
     build: .
@@ -24,7 +27,10 @@ services:
     depends_on:
       db:
         condition: service_healthy
-    ports: ["8000:8000"]
+    ports:
+      - "8000:8000"
+    environment:
+      PORT: 8000  # fallback in case not set in .env
 
 volumes:
   scrapescout_pgdata:

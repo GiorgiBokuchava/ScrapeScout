@@ -35,6 +35,9 @@
     --flash-dark-border: #5d5d5d;
     --button-color: #9198a1;
     --button-background-color: #636c764a;
+    --hero-gradient-start: #80bbff;
+    --hero-gradient-end: #0044e9;
+    --bg-primary: #FFFFFF;
 }
 
 [data-theme="dark"] {
@@ -62,6 +65,8 @@
     --flash-info: #001620;
     --flash-light: #000000;
     --flash-dark: #2B2B2C;
+    --hero-gradient-start: #2d5f97;
+    --hero-gradient-end: #002b8e;
 }
 
 * {
@@ -713,7 +718,7 @@ input:-webkit-autofill:active {
 
 .filter-select,
 .search-input {
-    padding: 0.7rem 1rem;
+    padding: 0.7rem 0rem;
     border: 1px solid var(--color-surface-border);
     border-radius: 6px;
     background-color: var(--color-background);
@@ -831,12 +836,12 @@ input:-webkit-autofill:active {
 .job-preview {
     position: fixed;
     top: 0;
-    right: -50%;
-    /* width: 50%; */
+    right: -70%;
+    width: 70%;
     height: 100vh;
     background-color: var(--color-surface);
     border-left: 1px solid var(--color-surface-border);
-    padding: 1.5rem;
+    padding: 1.5rem 0;
     overflow-y: auto;
     transition: right 0.3s ease-in-out;
     box-shadow: -5px 0 15px rgba(0, 0, 0, 0.1);
@@ -849,16 +854,17 @@ input:-webkit-autofill:active {
 
 .preview-header {
     position: absolute;
-    top: 1rem;
-    right: 1rem;
     display: flex;
     justify-content: space-between;
     align-items: flex-start;
     margin-bottom: 1.5rem;
-    padding: 0 0.75rem;
+    width: 100%;
 }
 
 .close-preview {
+    position: absolute;
+    top: 0;
+    right: 1rem;
     display: flex;
     justify-content: center;
     align-items: center;
@@ -879,12 +885,12 @@ input:-webkit-autofill:active {
 }
 
 .close-preview:hover {
-    /* color: var(--color-text-primary); */
     background-color: var(--button-background-color);
 }
 
 .preview-content {
     color: var(--color-text-primary);
+    padding: 0 1.5rem;
 }
 
 .preview-content h1 {
@@ -1017,6 +1023,9 @@ input:-webkit-autofill:active {
     .job-preview {
         width: 100%;
         right: -100%;
+        min-width: 100%;
+        max-width: 100%;
+        resize: none;
     }
 
     .filter-item {
@@ -1776,8 +1785,8 @@ input:-webkit-autofill:active {
 }
 
 .hero-section {
-    background: linear-gradient(to right, var(--color-primary), var(--color-primary-dark));
-    color: var(--color-text-primary-inverted);
+    background: linear-gradient(to right, var(--hero-gradient-start), var(--hero-gradient-end));
+    color: white;
     padding: 4rem 0;
 }
 

@@ -1,5 +1,5 @@
 # ---------- base image -------------------------------------------------------
-FROM python:3.13-slim
+FROM python:3.11-slim
 
 ENV DEBIAN_FRONTEND=noninteractive
 
@@ -42,8 +42,9 @@ ENV PYTHONUNBUFFERED=1 \
     CHROME_BIN=/usr/bin/google-chrome \
     CHROMEDRIVER_PATH=/usr/local/bin/chromedriver \
     FLASK_APP=run:app \
-    FLASK_ENV=production
+    FLASK_ENV=production \
+    PORT=8000
 
-EXPOSE 8000
+EXPOSE ${PORT}
 
-CMD ["sh", "-c", "flask db upgrade && exec gunicorn -b 0.0.0.0:${PORT:-8000} run:app"]
+CMD ["sh", "-c", "flask db upgrade && exec gunicorn -b 0.0.0.0:${PORT} run:app"]
