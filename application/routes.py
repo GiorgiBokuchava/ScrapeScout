@@ -1,5 +1,5 @@
 from application import app, db
-from flask import render_template, request, redirect, url_for, flash, jsonify
+from flask import render_template, request, redirect, url_for, flash, jsonify, current_app
 from application.forms import RegisterForm, LoginForm, JobSearchForm
 from application.models import User, Job, SavedJob
 from flask_login import login_user, logout_user
