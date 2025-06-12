@@ -23,7 +23,6 @@ jobs:
           pip install -r requirements.txt
 
       - name: Run index_all_jobs
-        working-directory: ScrapeScout
         env:
           FLASK_ENV: production
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
