@@ -28,10 +28,11 @@ jobs:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
         run: |
           python - <<EOF
-          from application import create_app, db
-          from application.jobs_service import index_all_jobs
+          # import the app object you already expose in run.py
+          from run import app
+          # import your indexer from the correct module path
+          from application.services.job_service import index_all_jobs
 
-          app = create_app()
           with app.app_context():
               index_all_jobs()
           EOF
