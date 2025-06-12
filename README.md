@@ -63,12 +63,13 @@ An **`.env.example`** template is provided – copy it and fill any secrets.
 ## Running Without Docker
 
 ```bash
-python -m venv env && source env/bin/activate
+python -m venv env
+source env/bin/activate (or env\Scripts\activate if ur on Windows)
 pip install -r requirements.txt
 export FLASK_APP=run.py
 export FLASK_DEBUG=1
 export SCRAPE_SCOUT_SECRET_KEY="devsecret123"
-export DATABASE_URL="sqlite:///instance/scrape.db"
+export DATABASE_URL="sqlite:///instance/scrape.db" // for local db
 export PORT=8000
 flask db upgrade
 python run.py

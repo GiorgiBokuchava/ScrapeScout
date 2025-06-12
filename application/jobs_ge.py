@@ -37,11 +37,17 @@ job_keyword = ""  # &q=KEYWORD
 
 # Common headers for all requests
 HEADERS = {
-    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36",
-    "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
-    "Accept-Language": "en-US,en;q=0.5",
+    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+    "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8",
+    "Accept-Language": "en-US,en;q=0.9",
+    "Accept-Encoding": "gzip, deflate, br",
     "Connection": "keep-alive",
     "Upgrade-Insecure-Requests": "1",
+    "Sec-Fetch-Dest": "document",
+    "Sec-Fetch-Mode": "navigate",
+    "Sec-Fetch-Site": "none",
+    "Sec-Fetch-User": "?1",
+    "Cache-Control": "max-age=0"
 }
 
 def get_fully_loaded_html(url: str) -> str:
@@ -55,32 +61,31 @@ def get_fully_loaded_html(url: str) -> str:
 
 
 def extractDescription(job_URL):
-    headers = {
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36",
-        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
-        "Accept-Language": "en-US,en;q=0.5",
-        "Connection": "keep-alive",
-        "Upgrade-Insecure-Requests": "1",
-    }
-
+    logger.info(f"Attempting to fetch description for URL: {job_URL}")
     try:
-        job_page = requests.get(job_URL, timeout=10, headers=headers)
+        job_page = requests.get(job_URL, timeout=10, headers=HEADERS)
+        logger.info(f"Initial request status code: {job_page.status_code}")
         job_page.raise_for_status()
         job_soup = BeautifulSoup(job_page.text, "html.parser")
+        logger.info("Successfully parsed initial page")
 
         # First check for English version link
         english_link = job_soup.find("a", text="ინგლისურ ენაზე")
         if english_link and english_link.get("href"):
+            logger.info("Found English version link")
             # Construct full URL for English version
             english_url = "https://www.jobs.ge" + english_link["href"]
+            logger.info(f"Attempting to fetch English version: {english_url}")
             try:
-                english_page = requests.get(english_url, timeout=10, headers=headers)
+                english_page = requests.get(english_url, timeout=10, headers=HEADERS)
+                logger.info(f"English version request status code: {english_page.status_code}")
                 english_page.raise_for_status()
                 english_soup = BeautifulSoup(english_page.text, "html.parser")
                 description = english_soup.find(
                     "td", attrs={"style": "padding-top:30px; padding-bottom:40px;"}
                 )
                 if description:
+                    logger.info("Found description in English version")
                     # Process description to preserve links
                     for link in description.find_all("a"):
                         # For mailto links, keep the email address but remove the mailto: part and query parameters
@@ -92,14 +97,20 @@ def extractDescription(job_URL):
                             # Replace other links with text and URL in a readable format
                             link.replace_with(f"{link.text} {link.get('href', '')}")
                     return description
+                else:
+                    logger.warning("No description found in English version")
             except Exception as e:
+                logger.error(f"Error fetching English version: {str(e)}")
+                logger.error(f"Response content: {english_page.text if 'english_page' in locals() else 'No response'}")
                 pass
 
         # Fall back to original description if English version not available or failed
+        logger.info("Attempting to find description in original page")
         description = job_soup.find(
             "td", attrs={"style": "padding-top:30px; padding-bottom:40px;"}
         )
         if description:
+            logger.info("Found description in original page")
             # Process description to preserve links
             for link in description.find_all("a"):
                 # For mailto links, keep the email address but remove the mailto: part and query parameters
@@ -112,12 +123,18 @@ def extractDescription(job_URL):
                     link.replace_with(f"{link.text} {link.get('href', '')}")
             return description
         else:
+            logger.warning(f"No description found for URL: {job_URL}")
+            logger.debug(f"Page content: {job_page.text[:1000]}...")  # Log first 1000 chars of page content
             return "N/A"
     except requests.exceptions.Timeout:
+        logger.error(f"Timeout fetching job description: {job_URL}")
         return "N/A"
     except requests.exceptions.RequestException as e:
+        logger.error(f"Request error fetching job description: {job_URL} - {str(e)}")
+        logger.error(f"Response content: {job_page.text if 'job_page' in locals() else 'No response'}")
         return "N/A"
     except Exception as e:
+        logger.error(f"Unexpected error fetching job description: {job_URL} - {str(e)}")
         return "N/A"
 
 

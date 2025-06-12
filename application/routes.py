@@ -225,7 +225,10 @@ def get_description():
     data = request.get_json()
     url = data.get("url")
     if not url:
+        current_app.logger.error("No URL provided in request")
         return jsonify({"error": "URL is required"}), 400
+
+    current_app.logger.info(f"Processing description request for URL: {url}")
 
     def clean_description_text(raw: str) -> str:
         # 1) Split & strip lines
@@ -261,13 +264,17 @@ def get_description():
     try:
         # Look up existing job (by URL)
         job = Job.query.filter_by(url=url).first()
+        current_app.logger.info(f"Found existing job in DB: {job is not None}")
 
         # Fetch description & email
+        current_app.logger.info("Fetching description from jobs.ge")
         description_soup = jobs_ge.extractDescription(url)
         if description_soup == "N/A":
+            current_app.logger.warning("No description available from jobs.ge")
             desc_text = "No description available"
             email = "N/A"
         else:
+            current_app.logger.info("Successfully fetched description, processing...")
             raw = description_soup.get_text(separator="\n")
             desc_text = clean_description_text(raw)
             extracted_email = jobs_ge.extractEmail(str(description_soup))
@@ -275,14 +282,18 @@ def get_description():
             email = (
                 "".join(extracted_email.split()) if extracted_email != "N/A" else "N/A"
             )
+            current_app.logger.info(f"Processed description length: {len(desc_text)}")
+            current_app.logger.info(f"Extracted email: {email}")
 
         if job:
             # Update existing job
+            current_app.logger.info("Updating existing job in DB")
             job.description = desc_text
             job.email = email
             db.session.commit()
         else:
             # Create a new job entry
+            current_app.logger.info("Creating new job entry in DB")
             job = Job(
                 url=url,
                 title="N/A",
@@ -302,6 +313,7 @@ def get_description():
         return jsonify({"description": desc_text, "email": email})
 
     except Exception as e:
+        current_app.logger.error(f"Error processing description request: {str(e)}")
         db.session.rollback()
         return jsonify({"error": str(e)}), 500
 
