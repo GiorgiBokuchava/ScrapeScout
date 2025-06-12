@@ -23,16 +23,14 @@ jobs:
           pip install -r requirements.txt
 
       - name: Run index_all_jobs
+        working-directory: ScrapeScout
         env:
           FLASK_ENV: production
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
         run: |
           python - <<EOF
-          # import the app object you already expose in run.py
           from run import app
-          # import your indexer from the correct module path
-          from application.services.job_service import index_all_jobs
-
+          from application.jobs_service import index_all_jobs
           with app.app_context():
               index_all_jobs()
           EOF
