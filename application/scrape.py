@@ -88,6 +88,8 @@ def index_all_jobs() -> None:
     else:
         current_app.logger.info("No new jobs to commit")
 
+    current_app.logger.info("✅ index_all_jobs() completed.")
+
 
 def get_jobs(
     searched_location: str,
