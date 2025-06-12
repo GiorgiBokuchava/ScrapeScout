@@ -1,0 +1,39 @@
+name: 🕒 Scheduled Job Indexer
+
+on:
+  workflow_dispatch:
+  schedule:
+    # every 5 minutes
+    - cron: '*/5 * * * *'
+
+jobs:
+  index:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.x'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Run index_all_jobs
+        env:
+          FLASK_ENV: production
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        run: |
+          python - <<EOF
+          import sys, os
+          sys.path.insert(0, os.path.abspath(os.getcwd()))
+
+          from run import app
+          from application.scrape import index_all_jobs
+
+          with app.app_context():
+              index_all_jobs()
+          EOF
