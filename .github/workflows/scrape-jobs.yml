@@ -28,8 +28,12 @@ jobs:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
         run: |
           python - <<EOF
+          import sys, os
+          sys.path.insert(0, os.path.abspath(os.getcwd()))
+
           from run import app
-          from application.jobs_service import index_all_jobs
+          from application.scrape import index_all_jobs
+
           with app.app_context():
               index_all_jobs()
           EOF
