@@ -4,7 +4,12 @@ on:
   workflow_dispatch:
   schedule:
     # every 5 minutes
-    - cron: '*/5 * * * *'
+    - cron: '0 0 * * *'   # 04:00 local = 00:00 UTC
+    - cron: '0 4 * * *'   # 08:00 local = 04:00 UTC
+    - cron: '0 8 * * *'   # 12:00 local = 08:00 UTC
+    - cron: '0 12 * * *'  # 16:00 local = 12:00 UTC
+    - cron: '0 16 * * *'  # 20:00 local = 16:00 UTC
+    - cron: '0 20 * * *'  # 00:00 local (next day) = 20:00 UTC
 
 jobs:
   index:
